@@ -99,7 +99,7 @@ NAPI_METHOD(tt_napi_pty_spawn) {
 
   if (err < 0) TT_NAPI_THROW_ERROR(err);
 
-  return NULL;
+  NAPI_RETURN_UINT32(pty->pid)
 }
 
 static void

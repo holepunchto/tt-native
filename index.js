@@ -15,8 +15,10 @@ class PTY extends Duplex {
     this._handle = b4a.allocUnsafe(binding.sizeof_tt_napi_pty_t)
     this._reading = null
     this._writing = null
+    this._running = true
+    this._signal = 'SIGHUP'
 
-    binding.tt_napi_pty_spawn(this._handle, width, height, file, args, cwd, this,
+    this.pid = binding.tt_napi_pty_spawn(this._handle, width, height, file, args, cwd, this,
       this._onread,
       this._onend
     )
@@ -32,6 +34,7 @@ class PTY extends Duplex {
   }
 
   _onend () {
+    this._running = false
     this.push(null)
   }
 
@@ -69,8 +72,17 @@ class PTY extends Duplex {
     )
   }
 
+  _predestroy () {
+    if (this._running) process.kill(this.pid, this._signal)
+  }
+
   _alloc () {
     this._reading = b4a.allocUnsafe(65536)
+  }
+
+  kill (signal) {
+    this._signal = signal
+    this.destroy()
   }
 }
 
