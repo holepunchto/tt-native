@@ -1,0 +1,3 @@
+[submodule "vendor/libtt"]
+	path = vendor/libtt
+	url = git@github.com:holepunchto/libtt.git
