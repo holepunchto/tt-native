@@ -19,5 +19,12 @@
         'defines': ['NDEBUG'],
       },
     },
+    'conditions': [
+      ['OS=="linux"', {
+        'libraries': [
+          '-lutil',
+        ],
+      }],
+    ]
   }]
 }
