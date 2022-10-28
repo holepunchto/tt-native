@@ -52,10 +52,11 @@ typedef struct {
 
   napi_ref on_read;
   napi_ref on_end;
+  napi_ref on_exit;
 } tt_napi_pty_t;
 
 typedef struct {
-  uv_write_t req;
+  tt_pty_write_t req;
 
   napi_env env;
   napi_ref ctx;
@@ -63,8 +64,36 @@ typedef struct {
   napi_ref on_write;
 } tt_napi_pty_write_t;
 
+static void
+on_close (tt_pty_t *handle) {
+  tt_napi_pty_t *pty = (tt_napi_pty_t *) handle;
+
+  napi_env env = pty->env;
+
+  napi_delete_reference(env, pty->ctx);
+  napi_delete_reference(env, pty->on_read);
+  napi_delete_reference(env, pty->on_end);
+  napi_delete_reference(env, pty->on_exit);
+}
+
+static void
+on_exit (tt_pty_t *handle, int64_t exit_status, int term_signal) {
+  tt_napi_pty_t *pty = (tt_napi_pty_t *) handle;
+
+  napi_env env = pty->env;
+
+  TT_NAPI_CALLBACK(pty, pty->on_exit, {
+    napi_value argv[2];
+    napi_create_int64(env, exit_status, &argv[0]);
+    napi_create_int32(env, term_signal, &argv[1]);
+    NAPI_MAKE_CALLBACK(env, NULL, ctx, callback, 2, argv, NULL);
+  });
+
+  tt_pty_close(handle, on_close);
+}
+
 NAPI_METHOD(tt_napi_pty_spawn) {
-  NAPI_ARGV(9)
+  NAPI_ARGV(10)
   NAPI_ARGV_BUFFER_CAST(tt_napi_pty_t *, handle, 0)
   NAPI_ARGV_UINT32(width, 1)
   NAPI_ARGV_UINT32(height, 2)
@@ -76,6 +105,7 @@ NAPI_METHOD(tt_napi_pty_spawn) {
   napi_create_reference(env, argv[6], 1, &(handle->ctx));
   napi_create_reference(env, argv[7], 1, &(handle->on_read));
   napi_create_reference(env, argv[8], 1, &(handle->on_end));
+  napi_create_reference(env, argv[9], 1, &(handle->on_exit));
 
   uv_loop_t *loop;
   napi_get_uv_event_loop(env, &loop);
@@ -92,7 +122,7 @@ NAPI_METHOD(tt_napi_pty_spawn) {
     .cwd = cwd,
   };
 
-  int err = tt_pty_spawn(loop, pty, &term, &process);
+  int err = tt_pty_spawn(loop, pty, &term, &process, on_exit);
 
   free(file);
   free(cwd);
@@ -103,25 +133,21 @@ NAPI_METHOD(tt_napi_pty_spawn) {
 }
 
 static void
-on_end (uv_stream_t *stream) {
-  tt_napi_pty_t *pty = (tt_napi_pty_t *) stream;
+on_end (tt_pty_t *handle) {
+  tt_napi_pty_t *pty = (tt_napi_pty_t *) handle;
 
   napi_env env = pty->env;
 
   TT_NAPI_CALLBACK(pty, pty->on_end, {
     NAPI_MAKE_CALLBACK(env, NULL, ctx, callback, 0, NULL, NULL);
   });
-
-  napi_delete_reference(env, pty->ctx);
-  napi_delete_reference(env, pty->on_read);
-  napi_delete_reference(env, pty->on_end);
 }
 
 static void
-on_read (uv_stream_t *stream, ssize_t read_len, const uv_buf_t *buf) {
-  if (read_len == UV_EOF) return on_end(stream);
+on_read (tt_pty_t *handle, ssize_t read_len, const uv_buf_t *buf) {
+  if (read_len == UV_EOF) return on_end(handle);
 
-  tt_napi_pty_t *pty = (tt_napi_pty_t *) stream;
+  tt_napi_pty_t *pty = (tt_napi_pty_t *) handle;
 
   napi_env env = pty->env;
 
@@ -140,7 +166,7 @@ on_read (uv_stream_t *stream, ssize_t read_len, const uv_buf_t *buf) {
 }
 
 static void
-on_alloc (uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
+on_alloc (tt_pty_t *handle, size_t suggested_size, uv_buf_t *buf) {
   tt_napi_pty_t *pty = (tt_napi_pty_t *) handle;
 
   *buf = pty->reading;
@@ -155,7 +181,7 @@ NAPI_METHOD(tt_napi_pty_read) {
 
   tt_pty_t *pty = &handle->pty;
 
-  int err = uv_read_start((uv_stream_t *) pty, on_alloc, on_read);
+  int err = tt_pty_read_start(pty, on_alloc, on_read);
 
   if (err < 0) TT_NAPI_THROW_ERROR(err);
 
@@ -163,7 +189,7 @@ NAPI_METHOD(tt_napi_pty_read) {
 }
 
 static void
-on_write (uv_write_t *req, int status) {
+on_write (tt_pty_write_t *req, int status) {
   tt_napi_pty_write_t *r = (tt_napi_pty_write_t *) req;
 
   napi_env env = r->env;
@@ -193,7 +219,7 @@ NAPI_METHOD(tt_napi_pty_write) {
 
   uv_buf_t b = uv_buf_init(buf, buf_len);
 
-  int err = uv_write((uv_write_t *) req, (uv_stream_t *) pty, &b, 1, on_write);
+  int err = tt_pty_write((tt_pty_write_t *) req, pty, &b, 1, on_write);
 
   if (err < 0) TT_NAPI_THROW_ERROR(err);
 

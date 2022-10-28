@@ -3,6 +3,7 @@
     'target_name': 'libtt',
     'type': 'static_library',
     'sources': [
+      './libtt/src/pty.c',
     ],
     'configurations': {
       'Debug': {
