@@ -77,7 +77,7 @@ on_close (tt_pty_t *handle) {
 }
 
 static void
-on_exit (tt_pty_t *handle, int64_t exit_status, int term_signal) {
+on_process_exit (tt_pty_t *handle, int64_t exit_status, int term_signal) {
   tt_napi_pty_t *pty = (tt_napi_pty_t *) handle;
 
   napi_env env = pty->env;
@@ -122,7 +122,7 @@ NAPI_METHOD(tt_napi_pty_spawn) {
     .cwd = cwd,
   };
 
-  int err = tt_pty_spawn(loop, pty, &term, &process, on_exit);
+  int err = tt_pty_spawn(loop, pty, &term, &process, on_process_exit);
 
   free(file);
   free(cwd);
