@@ -3,7 +3,7 @@ import test from 'brittle'
 import { spawn } from '../index.js'
 
 test('basic', async (t) => {
-  t.plan(2)
+  t.plan(4)
 
   const pty = spawn('node', ['test/fixtures/hello.mjs'])
   t.ok(pty.pid)
@@ -12,8 +12,14 @@ test('basic', async (t) => {
     .on('data', (data) => {
       t.comment(data.toString().trim())
     })
+    .on('exit', () => {
+      t.pass('exited')
+    })
     .on('end', () => {
       t.pass('ended')
+    })
+    .on('close', () => {
+      t.pass('closed')
     })
 })
 
@@ -57,7 +63,7 @@ test('destroy', async (t) => {
 })
 
 test('exit with code', async (t) => {
-  t.plan(2)
+  t.plan(3)
 
   const pty = spawn('node', ['test/fixtures/exit.mjs'])
   t.ok(pty.pid)
@@ -72,13 +78,14 @@ test('exit with code', async (t) => {
 })
 
 test('kill with signal', async (t) => {
-  t.plan(4)
+  t.plan(5)
 
   const pty = spawn('node', ['test/fixtures/spin.mjs'])
   t.ok(pty.pid)
 
   pty
     .on('exit', (code, signal) => {
+      t.pass('exited')
       t.is(code, process.platform === 'win32' ? 1 : 0)
       t.is(signal, 'SIGTERM')
     })

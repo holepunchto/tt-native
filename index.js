@@ -19,10 +19,10 @@ class PTY extends Duplex {
     super({ mapWritable: toBuffer })
 
     this._handle = b4a.allocUnsafe(binding.sizeof_tt_napi_pty_t)
+    this._running = true
     this._reading = null
     this._writing = null
-    this._running = true
-    this._signal = constants.SIGINT
+    this._destroying = null
 
     this.pid = binding.tt_napi_pty_spawn(this._handle, width, height, file, args, cwd, this,
       this._onread,
@@ -71,6 +71,12 @@ class PTY extends Duplex {
     }
 
     this.emit('exit', status, signal)
+
+    const cb = this._destroying
+    this._destroying = null
+
+    if (cb) cb(null)
+    else this.destroy()
   }
 
   _open (cb) {
@@ -99,7 +105,12 @@ class PTY extends Duplex {
   }
 
   _predestroy () {
-    if (this._running) binding.tt_napi_pty_kill(this._handle, this._signal)
+    this.kill()
+  }
+
+  _destroy (cb) {
+    if (this._running) this._destroying = cb
+    else cb(null)
   }
 
   _alloc () {
@@ -127,9 +138,7 @@ class PTY extends Duplex {
       }
     }
 
-    this._signal = signal
-
-    this.destroy()
+    if (this._running) binding.tt_napi_pty_kill(this._handle, signal)
   }
 }
 
