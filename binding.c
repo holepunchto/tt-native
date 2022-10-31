@@ -223,9 +223,10 @@ on_read (tt_pty_t *handle, ssize_t read_len, const uv_buf_t *buf) {
 
   TT_NAPI_CALLBACK(pty, pty->on_read, {
     napi_value result;
-    napi_value argv[1];
-    napi_create_uint32(env, read_len, &argv[0]);
-    NAPI_MAKE_CALLBACK(env, NULL, ctx, callback, 1, argv, &result);
+    napi_value argv[2];
+    TT_NAPI_MAKE_ERROR_OR_NULL(read_len, &argv[0]);
+    napi_create_uint32(env, read_len < 0 ? 0 : read_len, &argv[1]);
+    NAPI_MAKE_CALLBACK(env, NULL, ctx, callback, 2, argv, &result);
 
     char *next;
     size_t next_len;

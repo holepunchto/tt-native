@@ -32,12 +32,16 @@ class PTY extends Duplex {
     )
   }
 
-  _onread (read) {
-    const data = this._reading.subarray(0, read)
-    this.push(data)
+  _onread (err, read) {
+    if (err) this.destroy(err)
+    else {
+      const data = this._reading.subarray(0, read)
+      this.push(data)
 
-    this._reading = this._reading.subarray(read)
-    if (this._reading.byteLength === 0) this._alloc()
+      this._reading = this._reading.subarray(read)
+      if (this._reading.byteLength === 0) this._alloc()
+    }
+
     return this._reading
   }
 
