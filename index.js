@@ -2,6 +2,12 @@ const binding = require('node-gyp-build')(__dirname)
 const b4a = require('b4a')
 const { Duplex } = require('streamx')
 
+const constants = exports.constants = {
+  SIGINT: binding.SIGINT,
+  SIGKILL: binding.SIGKILL,
+  SIGTERM: binding.SIGTERM
+}
+
 class PTY extends Duplex {
   constructor (file, args, opts) {
     const {
@@ -16,7 +22,9 @@ class PTY extends Duplex {
     this._reading = null
     this._writing = null
     this._running = true
-    this._signal = 'SIGHUP'
+    this._signal = constants.SIGINT
+
+    args = args || []
 
     this.pid = binding.tt_napi_pty_spawn(this._handle, width, height, file, args, cwd, this,
       this._onread,
@@ -48,8 +56,22 @@ class PTY extends Duplex {
     else cb(null)
   }
 
-  _onexit (status) {
-    this.emit('exit', status)
+  _onexit (status, signal) {
+    switch (signal) {
+      case constants.SIGINT:
+        signal = 'SIGINT'
+        break
+      case constants.SIGKILL:
+        signal = 'SIGKILL'
+        break
+      case constants.SIGTERM:
+        signal = 'SIGTERM'
+        break
+      default:
+        signal = null
+    }
+
+    this.emit('exit', status, signal)
   }
 
   _open (cb) {
@@ -78,20 +100,37 @@ class PTY extends Duplex {
   }
 
   _predestroy () {
-    if (this._running) process.kill(this.pid, this._signal)
+    if (this._running) binding.tt_napi_pty_kill(this._handle, this._signal)
   }
 
   _alloc () {
     this._reading = b4a.allocUnsafe(65536)
   }
 
-  kill (signal) {
+  kill (signal = constants.SIGINT) {
+    if (typeof signal !== 'number') {
+      switch (signal) {
+        case 'SIGINT':
+          signal = constants.SIGINT
+          break
+        case 'SIGKILL':
+          signal = constants.SIGKILL
+          break
+        case 'SIGTERM':
+          signal = constants.SIGTERM
+          break
+        default:
+          throw new Error(`Unknown signal "${signal}"`)
+      }
+    }
+
     this._signal = signal
+
     this.destroy()
   }
 }
 
-exports.spawn = function spawn (file, args, opts = {}) {
+exports.spawn = function spawn (file, args = [], opts = {}) {
   return new PTY(file, args, opts)
 }
 

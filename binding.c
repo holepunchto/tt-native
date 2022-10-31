@@ -107,6 +107,28 @@ NAPI_METHOD(tt_napi_pty_spawn) {
   napi_create_reference(env, argv[8], 1, &(handle->on_end));
   napi_create_reference(env, argv[9], 1, &(handle->on_exit));
 
+  char **args = NULL;
+  uint32_t args_len = 0;
+  napi_get_array_length(env, argv[4], &args_len);
+
+  args = calloc(args_len + 2, sizeof(char *));
+
+  args[0] = file;
+  args[args_len + 1] = NULL;
+
+  for (size_t i = 0; i < args_len; i++) {
+    napi_value value;
+    napi_get_element(env, argv[4], i, &value);
+
+    size_t arg_len;
+    napi_get_value_string_utf8(env, value, NULL, 0, &arg_len);
+
+    char *arg = calloc(arg_len + 1, sizeof(char));
+    napi_get_value_string_utf8(env, value, arg, arg_len + 1, &arg_len);
+
+    args[i + 1] = arg;
+  }
+
   uv_loop_t *loop;
   napi_get_uv_event_loop(env, &loop);
 
@@ -119,6 +141,7 @@ NAPI_METHOD(tt_napi_pty_spawn) {
 
   tt_process_options_t process = {
     .file = file,
+    .args = args,
     .cwd = cwd,
   };
 
@@ -126,6 +149,12 @@ NAPI_METHOD(tt_napi_pty_spawn) {
 
   free(file);
   free(cwd);
+
+  for (size_t i = 0; i < args_len; i++) {
+    free(args[i + 1]);
+  }
+
+  free(args);
 
   if (err < 0) TT_NAPI_THROW_ERROR(err);
 
@@ -226,11 +255,30 @@ NAPI_METHOD(tt_napi_pty_write) {
   NAPI_RETURN_UINT32(err);
 }
 
+NAPI_METHOD(tt_napi_pty_kill) {
+  NAPI_ARGV(2)
+  NAPI_ARGV_BUFFER_CAST(tt_napi_pty_t *, handle, 0)
+  NAPI_ARGV_INT32(signum, 1)
+
+  tt_pty_t *pty = &handle->pty;
+
+  int err = tt_pty_kill(pty, signum);
+
+  if (err < 0) TT_NAPI_THROW_ERROR(err);
+
+  return NULL;
+}
+
 NAPI_INIT() {
+  NAPI_EXPORT_UINT32(SIGINT)
+  NAPI_EXPORT_UINT32(SIGKILL)
+  NAPI_EXPORT_UINT32(SIGTERM)
+
   NAPI_EXPORT_SIZEOF(tt_napi_pty_t)
   NAPI_EXPORT_SIZEOF(tt_napi_pty_write_t)
 
   NAPI_EXPORT_FUNCTION(tt_napi_pty_spawn)
   NAPI_EXPORT_FUNCTION(tt_napi_pty_read)
   NAPI_EXPORT_FUNCTION(tt_napi_pty_write)
+  NAPI_EXPORT_FUNCTION(tt_napi_pty_kill)
 }
