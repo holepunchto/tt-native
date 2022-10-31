@@ -24,8 +24,6 @@ class PTY extends Duplex {
     this._running = true
     this._signal = constants.SIGINT
 
-    args = args || []
-
     this.pid = binding.tt_napi_pty_spawn(this._handle, width, height, file, args, cwd, this,
       this._onread,
       this._onend,
@@ -43,7 +41,6 @@ class PTY extends Duplex {
   }
 
   _onend () {
-    this._running = false
     this.push(null)
   }
 
@@ -57,6 +54,8 @@ class PTY extends Duplex {
   }
 
   _onexit (status, signal) {
+    this._running = false
+
     switch (signal) {
       case constants.SIGINT:
         signal = 'SIGINT'
@@ -134,7 +133,20 @@ class PTY extends Duplex {
   }
 }
 
-exports.spawn = function spawn (file, args = [], opts = {}) {
+exports.spawn = function spawn (file, args, opts) {
+  if (Array.isArray(args)) {
+    //
+  } else if (args === null) {
+    args = []
+  } else {
+    opts = args
+    args = []
+  }
+
+  if (opts === undefined) {
+    opts = {}
+  }
+
   return new PTY(file, args, opts)
 }
 

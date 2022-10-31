@@ -2,7 +2,7 @@ import test from 'brittle'
 
 import { spawn } from '../index.js'
 
-test('spawn', async (t) => {
+test('basic', async (t) => {
   t.plan(2)
 
   const pty = spawn('node', ['test/fixtures/hello.mjs'])
@@ -17,7 +17,20 @@ test('spawn', async (t) => {
     })
 })
 
-test('spawn + kill', async (t) => {
+test('no args or opts', async (t) => {
+  t.plan(2)
+
+  const pty = spawn('node')
+  t.ok(pty.pid)
+
+  pty
+    .on('close', () => {
+      t.pass('closed')
+    })
+    .kill()
+})
+
+test('kill', async (t) => {
   t.plan(2)
 
   const pty = spawn('node', ['test/fixtures/spin.mjs'])
@@ -30,7 +43,7 @@ test('spawn + kill', async (t) => {
     .kill()
 })
 
-test('spawn + destroy', async (t) => {
+test('destroy', async (t) => {
   t.plan(2)
 
   const pty = spawn('node', ['test/fixtures/spin.mjs'])
