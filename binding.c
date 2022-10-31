@@ -255,6 +255,21 @@ NAPI_METHOD(tt_napi_pty_write) {
   NAPI_RETURN_UINT32(err);
 }
 
+NAPI_METHOD(tt_napi_pty_resize) {
+  NAPI_ARGV(3)
+  NAPI_ARGV_BUFFER_CAST(tt_napi_pty_t *, handle, 0)
+  NAPI_ARGV_UINT32(width, 1)
+  NAPI_ARGV_UINT32(height, 2)
+
+  tt_pty_t *pty = &handle->pty;
+
+  int err = tt_pty_resize(pty, width, height);
+
+  if (err < 0) TT_NAPI_THROW_ERROR(err);
+
+  return NULL;
+}
+
 NAPI_METHOD(tt_napi_pty_kill) {
   NAPI_ARGV(2)
   NAPI_ARGV_BUFFER_CAST(tt_napi_pty_t *, handle, 0)
@@ -280,5 +295,6 @@ NAPI_INIT() {
   NAPI_EXPORT_FUNCTION(tt_napi_pty_spawn)
   NAPI_EXPORT_FUNCTION(tt_napi_pty_read)
   NAPI_EXPORT_FUNCTION(tt_napi_pty_write)
+  NAPI_EXPORT_FUNCTION(tt_napi_pty_resize)
   NAPI_EXPORT_FUNCTION(tt_napi_pty_kill)
 }

@@ -74,3 +74,23 @@ test('kill with signal', async (t) => {
     })
     .kill('SIGTERM')
 })
+
+test('resize', async (t) => {
+  t.plan(3)
+
+  const pty = spawn('node', ['test/fixtures/resize.mjs'])
+  t.ok(pty.pid)
+
+  pty
+    .on('data', (data) => {
+      const size = data.toString().trim()
+      t.is(size, '120x90')
+
+      pty.kill()
+    })
+    .on('close', () => {
+      t.pass('closed')
+    })
+
+  setTimeout(() => pty.resize(120, 90), 100)
+})

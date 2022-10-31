@@ -107,6 +107,10 @@ class PTY extends Duplex {
     this._reading = b4a.allocUnsafe(65536)
   }
 
+  resize (width, height) {
+    binding.tt_napi_pty_resize(this._handle, width, height)
+  }
+
   kill (signal = constants.SIGINT) {
     if (typeof signal !== 'number') {
       switch (signal) {
