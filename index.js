@@ -27,7 +27,6 @@ class PTY extends Duplex {
 
     this.pid = binding.tt_napi_pty_spawn(this._handle, width, height, file, args, env, cwd, this,
       this._onread,
-      this._onend,
       this._onexit
     )
   }
@@ -43,10 +42,6 @@ class PTY extends Duplex {
     }
 
     return this._reading
-  }
-
-  _onend () {
-    this.push(null)
   }
 
   _onwrite (err) {
@@ -75,13 +70,15 @@ class PTY extends Duplex {
         signal = null
     }
 
+    this.push(null)
+
     this.emit('exit', status, signal)
 
     const cb = this._destroying
     this._destroying = null
 
     if (cb) cb(null)
-    else this.destroy()
+    else this.end()
   }
 
   _open (cb) {

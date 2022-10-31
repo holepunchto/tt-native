@@ -51,7 +51,6 @@ typedef struct {
   napi_ref ctx;
 
   napi_ref on_read;
-  napi_ref on_end;
   napi_ref on_exit;
 } tt_napi_pty_t;
 
@@ -72,7 +71,6 @@ on_close (tt_pty_t *handle) {
 
   napi_delete_reference(env, pty->ctx);
   napi_delete_reference(env, pty->on_read);
-  napi_delete_reference(env, pty->on_end);
   napi_delete_reference(env, pty->on_exit);
 }
 
@@ -93,7 +91,7 @@ on_process_exit (tt_pty_t *handle, int64_t exit_status, int term_signal) {
 }
 
 NAPI_METHOD(tt_napi_pty_spawn) {
-  NAPI_ARGV(11)
+  NAPI_ARGV(10)
   NAPI_ARGV_BUFFER_CAST(tt_napi_pty_t *, handle, 0)
   NAPI_ARGV_UINT32(width, 1)
   NAPI_ARGV_UINT32(height, 2)
@@ -103,8 +101,7 @@ NAPI_METHOD(tt_napi_pty_spawn) {
 
   napi_create_reference(env, argv[7], 1, &(handle->ctx));
   napi_create_reference(env, argv[8], 1, &(handle->on_read));
-  napi_create_reference(env, argv[9], 1, &(handle->on_end));
-  napi_create_reference(env, argv[10], 1, &(handle->on_exit));
+  napi_create_reference(env, argv[9], 1, &(handle->on_exit));
 
   char **args = NULL;
   uint32_t args_len = 0;
@@ -203,19 +200,8 @@ NAPI_METHOD(tt_napi_pty_spawn) {
 }
 
 static void
-on_end (tt_pty_t *handle) {
-  tt_napi_pty_t *pty = (tt_napi_pty_t *) handle;
-
-  napi_env env = pty->env;
-
-  TT_NAPI_CALLBACK(pty, pty->on_end, {
-    NAPI_MAKE_CALLBACK(env, NULL, ctx, callback, 0, NULL, NULL);
-  });
-}
-
-static void
 on_read (tt_pty_t *handle, ssize_t read_len, const uv_buf_t *buf) {
-  if (read_len == UV_EOF) return on_end(handle);
+  if (read_len == UV_EOF) return;
 
   tt_napi_pty_t *pty = (tt_napi_pty_t *) handle;
 

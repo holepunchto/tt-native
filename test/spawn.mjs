@@ -1,5 +1,6 @@
 import test from 'brittle'
 import path from 'path'
+import b4a from 'b4a'
 
 import { spawn } from '../index.js'
 
@@ -11,7 +12,7 @@ test('basic', async (t) => {
 
   pty
     .on('data', (data) => {
-      t.comment(data.toString().trim())
+      t.comment(b4a.toString(data))
     })
     .on('exit', () => {
       t.pass('exited')
@@ -104,10 +105,8 @@ test('resize', async (t) => {
 
   pty
     .on('data', (data) => {
-      const size = data.toString().trim()
+      const size = b4a.toString(data)
       t.is(size, '120x90')
-
-      pty.kill()
     })
     .on('close', () => {
       t.pass('closed')

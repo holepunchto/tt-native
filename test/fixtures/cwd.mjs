@@ -1,1 +1,3 @@
-console.log(process.cwd())
+const { stdout } = process
+
+stdout.write(process.cwd())
