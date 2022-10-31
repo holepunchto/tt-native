@@ -13,7 +13,8 @@ class PTY extends Duplex {
     const {
       width = 80,
       height = 60,
-      cwd = process.cwd()
+      env = null,
+      cwd = null
     } = opts
 
     super({ mapWritable: toBuffer })
@@ -24,7 +25,7 @@ class PTY extends Duplex {
     this._writing = null
     this._destroying = null
 
-    this.pid = binding.tt_napi_pty_spawn(this._handle, width, height, file, args, cwd, this,
+    this.pid = binding.tt_napi_pty_spawn(this._handle, width, height, file, args, env, cwd, this,
       this._onread,
       this._onend,
       this._onexit
@@ -152,9 +153,21 @@ exports.spawn = function spawn (file, args, opts) {
     args = []
   }
 
-  if (opts === undefined) {
+  if (opts) {
+    opts = { ...opts }
+  } else {
     opts = {}
   }
+
+  if (opts.env) {
+    const env = []
+
+    for (const key in opts.env) env.push(`${key}=${opts.env[key]}`)
+
+    opts.env = env
+  }
+
+  args = [file, ...args]
 
   return new PTY(file, args, opts)
 }

@@ -116,6 +116,27 @@ test('resize', async (t) => {
   setTimeout(() => pty.resize(120, 90), 100)
 })
 
+test('env', async (t) => {
+  t.plan(3)
+
+  const pty = spawn('node', ['test/fixtures/env.mjs'], {
+    env: {
+      ...process.env,
+      FOO: '42'
+    }
+  })
+  t.ok(pty.pid)
+
+  pty
+    .on('data', (data) => {
+      const foo = data.toString().trim()
+      t.is(foo, '42')
+    })
+    .on('close', () => {
+      t.pass('closed')
+    })
+})
+
 test('cwd', async (t) => {
   t.plan(3)
 

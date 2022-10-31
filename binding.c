@@ -93,28 +93,25 @@ on_process_exit (tt_pty_t *handle, int64_t exit_status, int term_signal) {
 }
 
 NAPI_METHOD(tt_napi_pty_spawn) {
-  NAPI_ARGV(10)
+  NAPI_ARGV(11)
   NAPI_ARGV_BUFFER_CAST(tt_napi_pty_t *, handle, 0)
   NAPI_ARGV_UINT32(width, 1)
   NAPI_ARGV_UINT32(height, 2)
   NAPI_ARGV_UTF8_MALLOC(file, 3)
-  NAPI_ARGV_UTF8_MALLOC(cwd, 5)
 
   handle->env = env;
 
-  napi_create_reference(env, argv[6], 1, &(handle->ctx));
-  napi_create_reference(env, argv[7], 1, &(handle->on_read));
-  napi_create_reference(env, argv[8], 1, &(handle->on_end));
-  napi_create_reference(env, argv[9], 1, &(handle->on_exit));
+  napi_create_reference(env, argv[7], 1, &(handle->ctx));
+  napi_create_reference(env, argv[8], 1, &(handle->on_read));
+  napi_create_reference(env, argv[9], 1, &(handle->on_end));
+  napi_create_reference(env, argv[10], 1, &(handle->on_exit));
 
   char **args = NULL;
   uint32_t args_len = 0;
+
   napi_get_array_length(env, argv[4], &args_len);
 
-  args = calloc(args_len + 2, sizeof(char *));
-
-  args[0] = file;
-  args[args_len + 1] = NULL;
+  args = calloc(args_len + 1, sizeof(char *));
 
   for (size_t i = 0; i < args_len; i++) {
     napi_value value;
@@ -126,7 +123,45 @@ NAPI_METHOD(tt_napi_pty_spawn) {
     char *arg = calloc(arg_len + 1, sizeof(char));
     napi_get_value_string_utf8(env, value, arg, arg_len + 1, &arg_len);
 
-    args[i + 1] = arg;
+    args[i] = arg;
+  }
+
+  char **pairs = NULL;
+  uint32_t pairs_len = 0;
+
+  napi_valuetype pairs_type;
+  napi_typeof(env, argv[5], &pairs_type);
+
+  if (pairs_type != napi_null) {
+    napi_get_array_length(env, argv[5], &pairs_len);
+
+    pairs = calloc(pairs_len + 1, sizeof(char *));
+
+    for (size_t i = 0; i < pairs_len; i++) {
+      napi_value value;
+      napi_get_element(env, argv[5], i, &value);
+
+      size_t pair_len;
+      napi_get_value_string_utf8(env, value, NULL, 0, &pair_len);
+
+      char *pair = calloc(pair_len + 1, sizeof(char));
+      napi_get_value_string_utf8(env, value, pair, pair_len + 1, &pair_len);
+
+      pairs[i] = pair;
+    }
+  }
+
+  char *cwd = NULL;
+  size_t cwd_len = 0;
+
+  napi_valuetype cwd_type;
+  napi_typeof(env, argv[6], &cwd_type);
+
+  if (cwd_type != napi_null) {
+    napi_get_value_string_utf8(env, argv[6], NULL, 0, &cwd_len);
+
+    cwd = calloc(cwd_len + 1, sizeof(char *));
+    napi_get_value_string_utf8(env, argv[6], cwd, cwd_len + 1, &cwd_len);
   }
 
   uv_loop_t *loop;
@@ -143,18 +178,24 @@ NAPI_METHOD(tt_napi_pty_spawn) {
     .file = file,
     .args = args,
     .cwd = cwd,
+    .env = pairs,
   };
 
   int err = tt_pty_spawn(loop, pty, &term, &process, on_process_exit);
 
   free(file);
-  free(cwd);
 
   for (size_t i = 0; i < args_len; i++) {
-    free(args[i + 1]);
+    free(args[i]);
   }
 
-  free(args);
+  for (size_t i = 0; i < pairs_len; i++) {
+    free(pairs[i]);
+  }
+
+  if (args) free(args);
+  if (pairs) free(pairs);
+  if (cwd) free(cwd);
 
   if (err < 0) TT_NAPI_THROW_ERROR(err);
 
