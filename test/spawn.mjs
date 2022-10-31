@@ -1,4 +1,5 @@
 import test from 'brittle'
+import path from 'path'
 
 import { spawn } from '../index.js'
 
@@ -113,4 +114,22 @@ test('resize', async (t) => {
     })
 
   setTimeout(() => pty.resize(120, 90), 100)
+})
+
+test('cwd', async (t) => {
+  t.plan(3)
+
+  const pty = spawn('node', ['fixtures/cwd.mjs'], {
+    cwd: 'test'
+  })
+  t.ok(pty.pid)
+
+  pty
+    .on('data', (data) => {
+      const cwd = data.toString().trim()
+      t.is(cwd, path.join(process.cwd(), 'test'))
+    })
+    .on('close', () => {
+      t.pass('closed')
+    })
 })
