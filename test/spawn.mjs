@@ -12,7 +12,7 @@ test('basic', async (t) => {
 
   pty
     .on('data', (data) => {
-      t.comment(b4a.toString(data))
+      t.comment(data)
     })
     .on('exit', () => {
       t.pass('exited')
@@ -97,7 +97,7 @@ test('kill with signal', async (t) => {
     .kill('SIGTERM')
 })
 
-test('resize', async (t) => {
+test('resize', { skip: process.platform === 'win32' }, async (t) => {
   t.plan(3)
 
   const pty = spawn('node', ['test/fixtures/resize.mjs'])
@@ -115,7 +115,7 @@ test('resize', async (t) => {
   setTimeout(() => pty.resize(120, 90), 100)
 })
 
-test('env', async (t) => {
+test('env', { skip: process.platform === 'win32' }, async (t) => {
   t.plan(3)
 
   const pty = spawn('node', ['test/fixtures/env.mjs'], {
@@ -136,7 +136,7 @@ test('env', async (t) => {
     })
 })
 
-test('cwd', async (t) => {
+test('cwd', { skip: process.platform === 'win32' }, async (t) => {
   t.plan(3)
 
   const pty = spawn('node', ['fixtures/cwd.mjs'], {
