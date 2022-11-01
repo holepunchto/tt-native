@@ -57,6 +57,8 @@ typedef struct {
 typedef struct {
   tt_pty_write_t req;
 
+  uv_buf_t writing;
+
   napi_env env;
   napi_ref ctx;
 
@@ -274,9 +276,9 @@ NAPI_METHOD(tt_napi_pty_write) {
 
   tt_pty_t *pty = &handle->pty;
 
-  uv_buf_t b = uv_buf_init(buf, buf_len);
+  req->writing = uv_buf_init(buf, buf_len);
 
-  int err = tt_pty_write((tt_pty_write_t *) req, pty, &b, 1, on_write);
+  int err = tt_pty_write((tt_pty_write_t *) req, pty, &req->writing, 1, on_write);
 
   if (err < 0) TT_NAPI_THROW_ERROR(err);
 
