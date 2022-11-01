@@ -1,8 +1,12 @@
 import test from 'brittle'
+import os from 'os'
 import path from 'path'
 import b4a from 'b4a'
 
 import { spawn } from '../index.js'
+
+const isWin = os.platform() === 'win32'
+const shellFile = isWin ? 'powershell.exe' : (process.env.SHELL || 'bash')
 
 test('basic', async (t) => {
   t.plan(4)
@@ -21,6 +25,39 @@ test('basic', async (t) => {
       t.pass('ended')
     })
     .on('close', () => {
+      t.pass('closed')
+    })
+})
+
+test('basic shell', async (t) => {
+  t.plan(4)
+
+  t.comment('shell', shellFile)
+  const pty = spawn(shellFile)
+  t.ok(pty.pid)
+
+  let timeoutId
+
+  pty
+    .on('data', (data) => {
+      t.comment([data.toString()])
+
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => {
+        console.log('pty kill')
+        pty.kill()
+      }, 500)
+    })
+    .on('exit', () => {
+      console.log('pty exit')
+      t.pass('exited')
+    })
+    .on('end', () => {
+      console.log('pty end')
+      t.pass('ended')
+    })
+    .on('close', () => {
+      console.log('pty close')
       t.pass('closed')
     })
 })
