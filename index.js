@@ -24,6 +24,7 @@ class PTY extends Duplex {
     this._reading = null
     this._writing = null
     this._destroying = null
+    this._signal = constants.SIGINT
 
     this.pid = binding.tt_napi_pty_spawn(this._handle, width, height, file, args, env, cwd, this,
       this._onread,
@@ -106,13 +107,12 @@ class PTY extends Duplex {
     )
   }
 
-  _predestroy () {
-    this.kill()
-  }
-
   _destroy (cb) {
-    if (this._running) this._destroying = cb
-    else cb(null)
+    if (!this._running) return cb(null)
+
+    this._destroying = cb
+
+    binding.tt_napi_pty_kill(this._handle, this._signal)
   }
 
   _alloc () {
@@ -140,7 +140,11 @@ class PTY extends Duplex {
       }
     }
 
-    if (this._running) binding.tt_napi_pty_kill(this._handle, signal)
+    if (!this._running) return
+
+    this._signal = signal
+
+    this.destroy()
   }
 }
 
