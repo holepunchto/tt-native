@@ -47,8 +47,7 @@ class PTY extends Duplex {
 
   _onwrite (err) {
     const { cb } = this._writing
-    this._writing.data = null
-    this._writing.cb = null
+    this._writing = null
 
     if (err) cb(err)
     else cb(null)
@@ -89,18 +88,13 @@ class PTY extends Duplex {
   }
 
   _write (data, cb) {
-    if (this._writing === null) {
-      const req = b4a.allocUnsafe(binding.sizeof_tt_napi_pty_write_t)
+    const req = b4a.allocUnsafe(binding.sizeof_tt_napi_pty_write_t)
 
-      this._writing = {
-        req,
-        data: null,
-        cb: null
-      }
+    this._writing = {
+      req,
+      data,
+      cb
     }
-
-    this._writing.data = data
-    this._writing.cb = cb
 
     binding.tt_napi_pty_write(this._handle, this._writing.req, data, this,
       this._onwrite
