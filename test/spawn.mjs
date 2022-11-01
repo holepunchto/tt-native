@@ -4,7 +4,7 @@ import b4a from 'b4a'
 
 import { spawn } from '../index.js'
 
-const shell = process.platform === 'win32?' ? 'powershell.exe' : (process.env.SHELL || 'bash')
+const shell = process.platform === 'win32?' ? 'powershell.exe' : ('bash') // process.env.SHELL
 
 test('basic', async (t) => {
   t.plan(4)
@@ -177,3 +177,74 @@ test('shell', async (t) => {
 
   setTimeout(() => pty.kill('SIGKILL'), 200)
 })
+
+test('shell write', async (t) => {
+  t.comment('shell', shell)
+
+  t.plan(5)
+
+  const pty = spawn(shell)
+  t.ok(pty.pid)
+
+  await waitForIdle(pty)
+
+  pty
+    .on('exit', () => {
+      t.pass('exited')
+    })
+    .on('close', () => {
+      t.pass('closed')
+    })
+
+  pty.write('echo "hello world"\n')
+
+  pty.once('data', function (data) {
+    t.is(data.toString(), 'echo "hello world"\r\n')
+
+    pty.once('data', function (data) {
+      t.ok(data.toString().startsWith('hello world\r\n'))
+
+      pty.kill('SIGKILL')
+    })
+  })
+})
+
+test.skip('bash - ioctl'/* , { skip: process.platform === 'win32' } */, async (t) => {
+  t.plan(4)
+
+  const pty = spawn('bash')
+  t.ok(pty.pid)
+
+  pty
+    .on('data', (data) => {
+      t.comment(data)
+
+      const output = data.toString()
+      if (output.includes('cannot set terminal process group') || output.includes('Inappropriate ioctl for device')) {
+        t.fail(output)
+      }
+    })
+    .on('exit', () => {
+      t.pass('exited')
+    })
+    .on('close', () => {
+      t.pass('closed')
+    })
+
+  await waitForIdle(pty)
+
+  pty.kill('SIGKILL')
+})
+
+function waitForIdle (pty) {
+  return new Promise(resolve => {
+    let timeoutId = null
+    pty.on('data', function onData () {
+      if (timeoutId !== null) clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => {
+        pty.removeListener('data', onData)
+        resolve()
+      }, 200)
+    })
+  })
+}
