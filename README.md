@@ -33,11 +33,23 @@ Options include:
 
 #### `pty.pid`
 
+The process ID of the spawned process.
+
 #### `pty.on('exit', code[, signal])`
+
+Emitted when the process exit.
 
 #### `pty.resize(width, height)`
 
+Resize the PTY.
+
 #### `pty.kill([signal])`
+
+Kill the process with the specified signal, which defaults to `SIGINT`. The following signals may be used:
+
+- `SIGINT`
+- `SIGKILL`
+- `SIGTERM`
 
 ## License
 
