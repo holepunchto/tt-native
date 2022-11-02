@@ -99,7 +99,7 @@ test('kill with signal', async (t) => {
     .kill('SIGTERM')
 })
 
-test('resize', { skip: process.platform === 'win32' }, async (t) => {
+test.skip('resize', async (t) => {
   t.plan(3)
 
   const pty = spawn('node', ['test/fixtures/resize.mjs'])
