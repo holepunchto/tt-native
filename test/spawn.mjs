@@ -4,7 +4,7 @@ import b4a from 'b4a'
 
 import { spawn } from '../index.js'
 
-const shell = process.platform === 'win32?' ? 'powershell.exe' : ('bash') // process.env.SHELL
+const shell = process.platform === 'win32?' ? 'powershell.exe' : 'bash' // (process.env.SHELL || 'bash')
 
 test('basic', async (t) => {
   t.plan(4)
@@ -277,5 +277,5 @@ function waitForIdle (pty) {
 }
 
 function strip (str) {
-  return str.replace(/\x1b[^m]*m/g, '')
+  return str.replace(/\x1b[^m]*m/g, '') // eslint-disable-line no-control-regex
 }
