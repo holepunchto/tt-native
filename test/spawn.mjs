@@ -116,6 +116,20 @@ test.skip('resize', async (t) => {
   setTimeout(() => pty.resize(120, 90), 100)
 })
 
+test('resize after exit', async (t) => {
+  t.plan(3)
+
+  const pty = spawn('node')
+  t.ok(pty.pid)
+
+  pty
+    .on('exit', () => {
+      t.pass('exited')
+      t.exception(() => pty.resize(120, 90), /Process has exited/)
+    })
+    .kill()
+})
+
 test('env', { skip: process.platform === 'win32' }, async (t) => {
   t.plan(3)
 

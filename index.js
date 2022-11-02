@@ -114,6 +114,8 @@ class PTY extends Duplex {
   }
 
   resize (width, height) {
+    if (!this._running) throw new Error('Process has exited')
+
     binding.tt_napi_pty_resize(this._handle, width, height)
   }
 
@@ -130,7 +132,7 @@ class PTY extends Duplex {
           signal = constants.SIGTERM
           break
         default:
-          throw new Error(`Unknown signal "${signal}"`)
+          throw new Error(`Unsupported signal "${signal}"`)
       }
     }
 
