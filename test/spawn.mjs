@@ -166,7 +166,7 @@ test('shell', async (t) => {
 
   pty
     .on('data', (data) => {
-      t.comment(data)
+      t.comment([strip(data.toString())])
     })
     .on('exit', () => {
       t.pass('exited')
@@ -178,10 +178,37 @@ test('shell', async (t) => {
   setTimeout(() => pty.kill('SIGKILL'), 200)
 })
 
-test('shell write', async (t) => {
+test('shell write after spawn', async (t) => {
   t.comment('shell', shell)
 
-  t.plan(5)
+  t.plan(3)
+
+  const pty = spawn(shell)
+  t.ok(pty.pid)
+
+  pty
+    .on('exit', () => {
+      t.pass('exited')
+    })
+    .on('close', () => {
+      t.pass('closed')
+    })
+
+  pty.write('echo "hello world"\n')
+
+  pty.on('data', (data) => {
+    t.comment([strip(data.toString())])
+  })
+
+  await waitForIdle(pty)
+
+  setTimeout(() => pty.kill('SIGKILL'), 200)
+})
+
+test('shell write after idle', async (t) => {
+  t.comment('shell', shell)
+
+  t.plan(3)
 
   const pty = spawn(shell)
   t.ok(pty.pid)
@@ -198,18 +225,16 @@ test('shell write', async (t) => {
 
   pty.write('echo "hello world"\n')
 
-  pty.once('data', function (data) {
-    t.is(data.toString(), 'echo "hello world"\r\n')
-
-    pty.once('data', function (data) {
-      t.ok(data.toString().startsWith('hello world\r\n'))
-
-      pty.kill('SIGKILL')
-    })
+  pty.on('data', function (data) {
+    t.comment([strip(data.toString())])
   })
+
+  await waitForIdle(pty)
+
+  pty.kill('SIGKILL')
 })
 
-test.skip('bash - ioctl'/* , { skip: process.platform === 'win32' } */, async (t) => {
+test.skip('bash - should not output ioctl message'/* , { skip: process.platform === 'win32' } */, async (t) => {
   t.plan(4)
 
   const pty = spawn('bash')
@@ -239,12 +264,18 @@ test.skip('bash - ioctl'/* , { skip: process.platform === 'win32' } */, async (t
 function waitForIdle (pty) {
   return new Promise(resolve => {
     let timeoutId = null
+
     pty.on('data', function onData () {
       if (timeoutId !== null) clearTimeout(timeoutId)
+
       timeoutId = setTimeout(() => {
         pty.removeListener('data', onData)
         resolve()
       }, 200)
     })
   })
+}
+
+function strip (str) {
+  return str.replace(/\x1b[^m]*m/g, '')
 }
