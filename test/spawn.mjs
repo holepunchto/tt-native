@@ -198,3 +198,29 @@ test('shell write', async (t) => {
 
   setTimeout(() => pty.kill('SIGKILL'), 200)
 })
+
+test('shell write after delay', async (t) => {
+  t.comment('shell', shell)
+
+  t.plan(3)
+
+  const pty = spawn(shell)
+  t.ok(pty.pid)
+
+  pty
+    .on('data', (data) => {
+      t.comment(util.inspect(`${data}`, { colors: true }))
+    })
+    .on('exit', () => {
+      t.pass('exited')
+    })
+    .on('close', () => {
+      t.pass('closed')
+    })
+
+  setTimeout(() => {
+    pty.write('echo hello world\n')
+
+    setTimeout(() => pty.kill('SIGKILL'), 200)
+  }, 500)
+})
