@@ -1,10 +1,10 @@
 import test from 'brittle'
+import util from 'util'
 import path from 'path'
-import b4a from 'b4a'
 
 import { spawn } from '../index.js'
 
-const shell = process.platform === 'win32?' ? 'powershell.exe' : 'bash' // (process.env.SHELL || 'bash')
+const shell = process.platform === 'win32?' ? 'powershell.exe' : 'bash'
 
 test('basic', async (t) => {
   t.plan(4)
@@ -14,7 +14,7 @@ test('basic', async (t) => {
 
   pty
     .on('data', (data) => {
-      t.comment(data)
+      t.comment(util.inspect(`${data}`, { colors: true }))
     })
     .on('exit', () => {
       t.pass('exited')
@@ -107,8 +107,7 @@ test('resize', { skip: process.platform === 'win32' }, async (t) => {
 
   pty
     .on('data', (data) => {
-      const size = b4a.toString(data)
-      t.is(size, '120x90')
+      t.is(`${data}`, '120x90')
     })
     .on('close', () => {
       t.pass('closed')
@@ -130,8 +129,7 @@ test('env', { skip: process.platform === 'win32' }, async (t) => {
 
   pty
     .on('data', (data) => {
-      const foo = data.toString().trim()
-      t.is(foo, '42')
+      t.is(`${data}`, '42')
     })
     .on('close', () => {
       t.pass('closed')
@@ -148,8 +146,7 @@ test('cwd', { skip: process.platform === 'win32' }, async (t) => {
 
   pty
     .on('data', (data) => {
-      const cwd = data.toString().trim()
-      t.is(cwd, path.join(process.cwd(), 'test'))
+      t.is(`${data}`, path.join(process.cwd(), 'test'))
     })
     .on('close', () => {
       t.pass('closed')
@@ -166,7 +163,7 @@ test('shell', async (t) => {
 
   pty
     .on('data', (data) => {
-      t.comment([strip(data.toString())])
+      t.comment(util.inspect(`${data}`, { colors: true }))
     })
     .on('exit', () => {
       t.pass('exited')
@@ -178,76 +175,17 @@ test('shell', async (t) => {
   setTimeout(() => pty.kill('SIGKILL'), 200)
 })
 
-test('shell write after spawn', async (t) => {
+test('shell write', async (t) => {
   t.comment('shell', shell)
 
   t.plan(3)
 
   const pty = spawn(shell)
-  t.ok(pty.pid)
-
-  pty
-    .on('exit', () => {
-      t.pass('exited')
-    })
-    .on('close', () => {
-      t.pass('closed')
-    })
-
-  pty.write('echo "hello world"\n')
-
-  pty.on('data', (data) => {
-    t.comment([strip(data.toString())])
-  })
-
-  await waitForIdle(pty)
-
-  setTimeout(() => pty.kill('SIGKILL'), 200)
-})
-
-test('shell write after idle', async (t) => {
-  t.comment('shell', shell)
-
-  t.plan(3)
-
-  const pty = spawn(shell)
-  t.ok(pty.pid)
-
-  await waitForIdle(pty)
-
-  pty
-    .on('exit', () => {
-      t.pass('exited')
-    })
-    .on('close', () => {
-      t.pass('closed')
-    })
-
-  pty.write('echo "hello world"\n')
-
-  pty.on('data', function (data) {
-    t.comment([strip(data.toString())])
-  })
-
-  await waitForIdle(pty)
-
-  pty.kill('SIGKILL')
-})
-
-test.skip('bash - should not output ioctl message'/* , { skip: process.platform === 'win32' } */, async (t) => {
-  t.plan(4)
-
-  const pty = spawn('bash')
   t.ok(pty.pid)
 
   pty
     .on('data', (data) => {
-      t.comment(data)
-
-      const output = data.toString()
-      if (output.includes('cannot set terminal process group') || output.includes('Inappropriate ioctl for device')) {
-        t.fail(output)
-      }
+      t.comment(util.inspect(`${data}`, { colors: true }))
     })
     .on('exit', () => {
       t.pass('exited')
@@ -256,26 +194,7 @@ test.skip('bash - should not output ioctl message'/* , { skip: process.platform 
       t.pass('closed')
     })
 
-  await waitForIdle(pty)
+  pty.write('echo hello world\n')
 
-  pty.kill('SIGKILL')
+  setTimeout(() => pty.kill('SIGKILL'), 200)
 })
-
-function waitForIdle (pty) {
-  return new Promise(resolve => {
-    let timeoutId = null
-
-    pty.on('data', function onData () {
-      if (timeoutId !== null) clearTimeout(timeoutId)
-
-      timeoutId = setTimeout(() => {
-        pty.removeListener('data', onData)
-        resolve()
-      }, 200)
-    })
-  })
-}
-
-function strip (str) {
-  return str.replace(/\x1b[^m]*m/g, '') // eslint-disable-line no-control-regex
-}
