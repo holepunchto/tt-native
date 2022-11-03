@@ -143,14 +143,14 @@ test('env', { skip: process.platform === 'win32' }, async (t) => {
 
   pty
     .on('data', (data) => {
-      t.is(`${data}`, '42')
+      t.ok(`${data}`.includes('42'))
     })
     .on('close', () => {
       t.pass('closed')
     })
 })
 
-test('cwd', { skip: process.platform === 'win32' }, async (t) => {
+test('cwd', async (t) => {
   t.plan(3)
 
   const pty = spawn('node', ['fixtures/cwd.mjs'], {
@@ -160,7 +160,7 @@ test('cwd', { skip: process.platform === 'win32' }, async (t) => {
 
   pty
     .on('data', (data) => {
-      t.is(`${data}`, path.join(process.cwd(), 'test'))
+      t.ok(`${data}`.includes(path.join(process.cwd(), 'test')))
     })
     .on('close', () => {
       t.pass('closed')
