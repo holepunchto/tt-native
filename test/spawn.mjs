@@ -4,7 +4,7 @@ import path from 'path'
 
 import { spawn } from '../index.js'
 
-const shell = process.platform === 'win32?' ? 'powershell.exe' : 'bash'
+const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash'
 
 test('basic', async (t) => {
   t.plan(4)
