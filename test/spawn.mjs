@@ -130,7 +130,7 @@ test('resize after exit', async (t) => {
     .kill()
 })
 
-test('env', { skip: process.platform === 'win32' }, async (t) => {
+test('env', async (t) => {
   t.plan(3)
 
   const pty = spawn('node', ['test/fixtures/env.mjs'], {
