@@ -31,6 +31,14 @@ Options include:
 }
 ```
 
+#### `pty.width`
+
+The current width of the PTY.
+
+#### `pty.height`
+
+The current height of the PTY.
+
 #### `pty.pid`
 
 The process ID of the spawned process.

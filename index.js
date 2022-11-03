@@ -26,6 +26,9 @@ class PTY extends Duplex {
     this._destroying = null
     this._signal = constants.SIGINT
 
+    this.width = width
+    this.height = height
+
     this.pid = binding.tt_napi_pty_spawn(this._handle, width, height, file, args, env, cwd, this,
       this._onread,
       this._onexit
@@ -117,6 +120,9 @@ class PTY extends Duplex {
     if (!this._running) throw new Error('Process has exited')
 
     binding.tt_napi_pty_resize(this._handle, width, height)
+
+    this.width = width
+    this.height = height
   }
 
   kill (signal = constants.SIGINT) {
