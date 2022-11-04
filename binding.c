@@ -71,9 +71,9 @@ on_close (tt_pty_t *handle) {
 
   napi_env env = pty->env;
 
-  napi_delete_reference(env, pty->ctx);
   napi_delete_reference(env, pty->on_read);
   napi_delete_reference(env, pty->on_exit);
+  napi_delete_reference(env, pty->ctx);
 }
 
 static void
@@ -259,8 +259,8 @@ on_write (tt_pty_write_t *req, int status) {
     NAPI_MAKE_CALLBACK(env, NULL, ctx, callback, 1, argv, NULL);
   });
 
-  napi_delete_reference(env, r->ctx);
   napi_delete_reference(env, r->on_write);
+  napi_delete_reference(env, r->ctx);
 }
 
 NAPI_METHOD(tt_napi_pty_write) {
