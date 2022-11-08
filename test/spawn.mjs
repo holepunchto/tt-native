@@ -53,6 +53,21 @@ test('kill', async (t) => {
     .kill()
 })
 
+test('kill twice', async (t) => {
+  t.plan(2)
+
+  const pty = spawn('node', ['test/fixtures/spin.mjs'])
+  t.ok(pty.pid)
+
+  pty
+    .on('close', () => {
+      t.pass('closed')
+    })
+
+  pty.kill()
+  pty.kill()
+})
+
 test('destroy', async (t) => {
   t.plan(2)
 

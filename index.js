@@ -24,7 +24,6 @@ class PTY extends Duplex {
     this._reading = null
     this._writing = null
     this._destroying = null
-    this._signal = constants.SIGINT
 
     this.width = width
     this.height = height
@@ -104,12 +103,13 @@ class PTY extends Duplex {
     )
   }
 
+  _predestroy () {
+    if (this._running) this.kill()
+  }
+
   _destroy (cb) {
-    if (!this._running) return cb(null)
-
-    this._destroying = cb
-
-    binding.tt_napi_pty_kill(this._handle, this._signal)
+    if (this._running) this._destroying = cb
+    else cb(null)
   }
 
   _alloc () {
@@ -142,11 +142,7 @@ class PTY extends Duplex {
       }
     }
 
-    if (!this._running) return
-
-    this._signal = signal
-
-    this.destroy()
+    if (this._running) binding.tt_napi_pty_kill(this._handle, signal)
   }
 }
 
