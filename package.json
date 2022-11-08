@@ -1,6 +1,6 @@
 {
   "name": "tt-native",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "libtt JavaScript bindings for Node.js",
   "main": "index.js",
   "files": [
