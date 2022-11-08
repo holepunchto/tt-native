@@ -21,6 +21,7 @@ class PTY extends Duplex {
 
     this._handle = b4a.allocUnsafe(binding.sizeof_tt_napi_pty_t)
     this._running = true
+    this._killed = false
     this._reading = null
     this._writing = null
     this._destroying = null
@@ -126,6 +127,9 @@ class PTY extends Duplex {
   }
 
   kill (signal = constants.SIGINT) {
+    if (!this._running) throw new Error('Process has exited')
+    if (this._killed) throw new Error('Process already killed')
+
     if (typeof signal !== 'number') {
       switch (signal) {
         case 'SIGINT':
@@ -142,7 +146,9 @@ class PTY extends Duplex {
       }
     }
 
-    if (this._running) binding.tt_napi_pty_kill(this._handle, signal)
+    binding.tt_napi_pty_kill(this._handle, signal)
+
+    this._killed = true
   }
 }
 

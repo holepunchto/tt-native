@@ -54,7 +54,7 @@ test('kill', async (t) => {
 })
 
 test('kill twice', async (t) => {
-  t.plan(2)
+  t.plan(3)
 
   const pty = spawn('node', ['test/fixtures/spin.mjs'])
   t.ok(pty.pid)
@@ -63,9 +63,9 @@ test('kill twice', async (t) => {
     .on('close', () => {
       t.pass('closed')
     })
+    .kill()
 
-  pty.kill()
-  pty.kill()
+  t.exception(() => pty.kill())
 })
 
 test('destroy', async (t) => {
