@@ -3,7 +3,7 @@
 https://github.com/holepunchto/libtt JavaScript bindings for Node.js.
 
 ```sh
-npm install fs-native
+npm install tt-native
 ```
 
 ## Usage
