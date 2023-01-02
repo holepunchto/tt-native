@@ -253,3 +253,46 @@ test('shell write after delay', async (t) => {
     setTimeout(() => pty.kill('SIGKILL'), 200)
   }, 500)
 })
+
+test.solo('shell CTRL+C', async (t) => {
+  t.plan(4)
+
+  let timeoutId = null
+  const pty = spawn('bash') // + using zsh fails
+  t.ok(pty.pid)
+
+  setTimeout(() => {
+    pty
+      .on('data', (data) => {
+        t.comment(util.inspect(`${data}`, { colors: true }))
+
+        if (data.includes(Buffer.from([94, 67]))) { // ^C
+          t.pass('Found CTRL+C')
+        }
+
+        kill()
+      })
+      .on('exit', () => {
+        t.pass('exited')
+      })
+      .on('close', () => {
+        t.pass('closed')
+      })
+
+    console.log('Sending echo')
+    pty.write(' echo hello world\n')
+
+    setTimeout(() => {
+      console.log('Sending CTRL+C')
+      pty.write(Buffer.from([3])) // CTRL+C
+    }, 500)
+  }, 500)
+
+  function kill () {
+    if (timeoutId !== null) clearTimeout(timeoutId)
+
+    timeoutId = setTimeout(() => {
+      pty.kill('SIGKILL')
+    }, 1000)
+  }
+})
