@@ -53,21 +53,6 @@ test('kill', async (t) => {
     .kill()
 })
 
-test('kill twice', async (t) => {
-  t.plan(3)
-
-  const pty = spawn('node', ['test/fixtures/spin.mjs'])
-  t.ok(pty.pid)
-
-  pty
-    .on('close', () => {
-      t.pass('closed')
-    })
-    .kill()
-
-  t.exception(() => pty.kill())
-})
-
 test('destroy', async (t) => {
   t.plan(2)
 
@@ -112,6 +97,29 @@ test('kill with signal', async (t) => {
       t.pass('closed')
     })
     .kill('SIGTERM')
+})
+
+test('kill twice', async (t) => {
+  t.plan(5)
+
+  const pty = spawn('node', ['test/fixtures/sigint.mjs'])
+  t.ok(pty.pid)
+
+  pty
+    .on('exit', (code, signal) => {
+      t.pass('exited')
+      t.is(code, process.platform === 'win32' ? 1 : 0)
+      t.is(signal, 'SIGTERM')
+    })
+    .on('close', () => {
+      t.pass('closed')
+    })
+
+  setTimeout(() => {
+    pty.kill('SIGINT') // Caught and ignored
+
+    setTimeout(() => pty.kill('SIGTERM'), 200)
+  }, 200)
 })
 
 test.skip('resize', async (t) => {
