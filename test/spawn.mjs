@@ -1,6 +1,7 @@
 import test from 'brittle'
 import util from 'util'
 import path from 'path'
+import b4a from 'b4a'
 
 import { spawn } from '../index.js'
 
@@ -260,4 +261,29 @@ test('shell write after delay', async (t) => {
 
     setTimeout(() => pty.kill('SIGKILL'), 200)
   }, 500)
+})
+
+// https://github.com/holepunchto/libtt/issues/1
+test.skip('trigger signal', async (t) => {
+  t.plan(3)
+
+  const pty = spawn('node', ['test/fixtures/sigint.mjs'])
+  t.ok(pty.pid)
+
+  pty
+    .on('data', (data) => {
+      t.comment(util.inspect(`${data}`, { colors: true }))
+
+      if (b4a.includes(data, 'SIGINT')) {
+        t.pass('triggered SIGINT')
+      }
+    })
+    .on('exit', () => {
+      t.pass('exited')
+    })
+    .on('close', () => {
+      t.pass('closed')
+    })
+
+  setTimeout(() => pty.write('\x03' /* Ctrl + C */), 100)
 })

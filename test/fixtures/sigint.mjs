@@ -1,5 +1,7 @@
-process.stdin.resume()
+const { stdin, stdout } = process
+
+stdin.resume()
 
 process.on('SIGINT', () => {
-  // Ignore
+  stdout.write('SIGINT\n')
 })
