@@ -61,4 +61,4 @@ Kill the process with the specified signal, which defaults to `SIGINT`. The foll
 
 ## License
 
-ISC
+Apache 2.0
