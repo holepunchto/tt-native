@@ -1,11 +1,13 @@
 import test from 'brittle'
-import util from 'util'
 import path from 'path'
+import process from 'process'
 import b4a from 'b4a'
 
-import { spawn } from '../index.js'
+import { spawn } from './index.js'
 
-const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash'
+const isWindows = process.platform === 'win32'
+
+const shell = isWindows ? 'powershell.exe' : 'bash'
 
 test('basic', async (t) => {
   t.plan(4)
@@ -15,7 +17,7 @@ test('basic', async (t) => {
 
   pty
     .on('data', (data) => {
-      t.comment(util.inspect(`${data}`, { colors: true }))
+      t.comment(data)
     })
     .on('exit', () => {
       t.pass('exited')
@@ -91,7 +93,7 @@ test('kill with signal', async (t) => {
   pty
     .on('exit', (code, signal) => {
       t.pass('exited')
-      t.is(code, process.platform === 'win32' ? 1 : 0)
+      t.is(code, isWindows ? 1 : 0)
       t.is(signal, 'SIGTERM')
     })
     .on('close', () => {
@@ -109,7 +111,7 @@ test('kill twice', async (t) => {
   pty
     .on('exit', (code, signal) => {
       t.pass('exited')
-      t.is(code, process.platform === 'win32' ? 1 : 0)
+      t.is(code, isWindows ? 1 : 0)
       t.is(signal, 'SIGTERM')
     })
     .on('close', () => {
@@ -184,7 +186,7 @@ test('cwd', async (t) => {
 
   pty
     .on('data', (data) => {
-      t.ok(`${data}`.includes(path.join(process.cwd(), 'test')))
+      t.ok(`${data}`.includes(path.resolve('test')))
     })
     .on('close', () => {
       t.pass('closed')
@@ -201,7 +203,7 @@ test('shell', async (t) => {
 
   pty
     .on('data', (data) => {
-      t.comment(util.inspect(`${data}`, { colors: true }))
+      t.comment(data)
     })
     .on('exit', () => {
       t.pass('exited')
@@ -223,7 +225,7 @@ test('shell write', async (t) => {
 
   pty
     .on('data', (data) => {
-      t.comment(util.inspect(`${data}`, { colors: true }))
+      t.comment(data)
     })
     .on('exit', () => {
       t.pass('exited')
@@ -247,7 +249,7 @@ test('shell write after delay', async (t) => {
 
   pty
     .on('data', (data) => {
-      t.comment(util.inspect(`${data}`, { colors: true }))
+      t.comment(data)
     })
     .on('exit', () => {
       t.pass('exited')
@@ -272,7 +274,7 @@ test.skip('trigger signal', async (t) => {
 
   pty
     .on('data', (data) => {
-      t.comment(util.inspect(`${data}`, { colors: true }))
+      t.comment(data)
 
       if (b4a.includes(data, 'SIGINT')) {
         t.pass('triggered SIGINT')

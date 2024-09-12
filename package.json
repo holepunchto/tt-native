@@ -3,40 +3,51 @@
   "version": "1.0.4",
   "description": "libtt JavaScript bindings for Node.js",
   "main": "index.js",
+  "imports": {
+    "path": {
+      "bare": "bare-path",
+      "default": "path"
+    },
+    "process": {
+      "bare": "bare-process",
+      "default": "process"
+    }
+  },
   "files": [
     "index.js",
-    "prebuilds",
+    "macros.h",
     "binding.c",
-    "binding.gyp",
-    "vendor/libtt/LICENSE",
-    "vendor/libtt/include",
-    "vendor/libtt/src",
-    "vendor/libtt.gyp"
+    "binding.js",
+    "prebuilds",
+    "CMakeLists.txt",
+    "vendor/libtt"
   ],
+  "addon": true,
   "scripts": {
-    "test": "standard && brittle test/*.mjs",
-    "prebuild": "prebuildify --napi",
-    "install": "node-gyp-build"
+    "test": "npm run lint && npm run test:bare && npm run test:node",
+    "test:bare": "bare test.mjs",
+    "test:node": "node test.mjs",
+    "lint": "standard"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/holepunchto/tt-native.git"
   },
-  "author": "Kasper Isager Dalsgarð <kasper@funktionel.co>",
-  "license": "ISC",
+  "author": "Holepunch",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/holepunchto/tt-native/issues"
   },
   "homepage": "https://github.com/holepunchto/tt-native#readme",
   "dependencies": {
     "b4a": "^1.6.0",
-    "napi-macros": "^2.0.0",
-    "node-gyp-build": "^4.2.3",
+    "load-addon": "^1.0.0",
     "streamx": "^2.12.5"
   },
   "devDependencies": {
+    "bare-path": "^3.0.0",
+    "bare-process": "^3.0.0",
     "brittle": "^3.1.0",
-    "prebuildify": "^5.0.1",
     "standard": "^17.0.0"
   }
 }

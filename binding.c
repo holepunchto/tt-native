@@ -1,8 +1,9 @@
-#include <napi-macros.h>
 #include <node_api.h>
 #include <stdlib.h>
 #include <tt.h>
 #include <uv.h>
+
+#include "macros.h"
 
 #define TT_NAPI_MAKE_ERROR(status, err) \
   { \

@@ -1,6 +1,6 @@
-const binding = require('node-gyp-build')(__dirname)
 const b4a = require('b4a')
 const { Duplex } = require('streamx')
+const binding = require('./binding')
 
 const constants = exports.constants = {
   SIGINT: binding.SIGINT,
