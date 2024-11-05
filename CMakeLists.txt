@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(tt_native C)
+find_package(cmake-bare REQUIRED PATHS node_modules/cmake-bare)
+find_package(cmake-napi REQUIRED PATHS node_modules/cmake-napi)
 
-include(bare)
-include(napi)
+project(tt_native C)
 
 if(NOT TARGET tt)
   add_subdirectory(vendor/libtt EXCLUDE_FROM_ALL)
@@ -15,12 +15,12 @@ target_sources(
   ${tt_native_bare}
   PRIVATE
     binding.c
-  PUBLIC
-    $<TARGET_OBJECTS:tt>
 )
 
 target_link_libraries(
   ${tt_native_bare}
+  PRIVATE
+    $<TARGET_OBJECTS:tt>
   PUBLIC
     tt
 )
@@ -31,12 +31,12 @@ target_sources(
   ${tt_native_node}
   PRIVATE
     binding.c
-  PUBLIC
-    $<TARGET_OBJECTS:tt>
 )
 
 target_link_libraries(
   ${tt_native_node}
+  PRIVATE
+    $<TARGET_OBJECTS:tt>
   PUBLIC
     tt
 )

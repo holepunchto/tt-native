@@ -41,13 +41,15 @@
   "homepage": "https://github.com/holepunchto/tt-native#readme",
   "dependencies": {
     "b4a": "^1.6.0",
-    "load-addon": "^1.0.0",
+    "require-addon": "^1.0.2",
     "streamx": "^2.12.5"
   },
   "devDependencies": {
     "bare-path": "^3.0.0",
     "bare-process": "^3.0.0",
     "brittle": "^3.1.0",
+    "cmake-bare": "^1.1.15",
+    "cmake-napi": "^1.0.7",
     "standard": "^17.0.0"
   }
 }
