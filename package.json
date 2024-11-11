@@ -18,9 +18,8 @@
     "macros.h",
     "binding.c",
     "binding.js",
-    "prebuilds",
     "CMakeLists.txt",
-    "vendor/libtt"
+    "prebuilds"
   ],
   "addon": true,
   "scripts": {
