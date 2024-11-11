@@ -1,4 +1,0 @@
-[submodule "vendor/libtt"]
-	path = vendor/libtt
-	url = ../../holepunchto/libtt.git
-	shallow = true

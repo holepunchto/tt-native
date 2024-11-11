@@ -49,6 +49,7 @@
     "bare-process": "^3.0.0",
     "brittle": "^3.1.0",
     "cmake-bare": "^1.1.15",
+    "cmake-fetch": "^1.1.0",
     "cmake-napi": "^1.0.7",
     "standard": "^17.0.0"
   }

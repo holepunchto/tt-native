@@ -1,13 +1,12 @@
 cmake_minimum_required(VERSION 3.25)
 
 find_package(cmake-bare REQUIRED PATHS node_modules/cmake-bare)
+find_package(cmake-fetch REQUIRED PATHS node_modules/cmake-fetch)
 find_package(cmake-napi REQUIRED PATHS node_modules/cmake-napi)
 
 project(tt_native C)
 
-if(NOT TARGET tt)
-  add_subdirectory(vendor/libtt EXCLUDE_FROM_ALL)
-endif()
+fetch_package("github:holepunchto/libtt#bfcf3b3")
 
 add_bare_module(tt_native_bare)
 
