@@ -30,6 +30,23 @@ test('basic', async (t) => {
     })
 })
 
+test.solo('big write', async (t) => {
+  t.plan(3)
+
+  const pty = spawn('node', ['test/fixtures/big-write.mjs'])
+
+  pty
+    .on('exit', () => {
+      t.pass('exited')
+    })
+    .on('end', () => {
+      t.pass('ended')
+    })
+    .on('close', () => {
+      t.pass('closed')
+    })
+})
+
 test('no args or opts', async (t) => {
   t.plan(2)
 
