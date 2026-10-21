@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <bare.h>
 #include <js.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <tt.h>
 #include <utf.h>
@@ -16,12 +17,19 @@ typedef struct {
 
   js_ref_t *on_read;
   js_ref_t *on_exit;
+
+  bool exited;
+  bool exiting;
+
+  js_deferred_teardown_t *teardown;
 } tt_js_pty_t;
 
 typedef struct {
   tt_pty_write_t req;
 
   uv_buf_t writing;
+
+  tt_js_pty_t *pty;
 
   js_env_t *env;
   js_ref_t *ctx;
@@ -131,6 +139,9 @@ tt_js__on_close(tt_pty_t *handle) {
 
   err = js_delete_reference(env, pty->ctx);
   assert(err == 0);
+
+  err = js_finish_deferred_teardown_callback(pty->teardown);
+  assert(err == 0);
 }
 
 static void
@@ -138,6 +149,14 @@ tt_js__on_exit(tt_pty_t *handle, int64_t exit_status, int term_signal) {
   int err;
 
   tt_js_pty_t *pty = (tt_js_pty_t *) handle;
+
+  pty->exited = true;
+
+  if (pty->exiting) {
+    tt_pty_close(handle, tt_js__on_close);
+
+    return;
+  }
 
   js_env_t *env = pty->env;
 
@@ -176,6 +195,8 @@ tt_js__on_read(tt_pty_t *handle, ssize_t read_len, const uv_buf_t *buf) {
   if (read_len == UV_EOF || read_len == 0) return;
 
   tt_js_pty_t *pty = (tt_js_pty_t *) handle;
+
+  if (pty->exiting) return;
 
   js_env_t *env = pty->env;
 
@@ -247,12 +268,30 @@ tt_js__on_write(tt_pty_write_t *handle, int status) {
   err = js_delete_reference(env, req->ctx);
   assert(err == 0);
 
-  js_value_t *argv[1] = {tt_js__create_error_or_null(env, status)};
+  if (!req->pty->exiting) {
+    js_value_t *argv[1] = {tt_js__create_error_or_null(env, status)};
 
-  js_call_function_with_checkpoint(env, ctx, on_write, 1, argv, NULL);
+    js_call_function_with_checkpoint(env, ctx, on_write, 1, argv, NULL);
+  }
 
   err = js_close_handle_scope(env, scope);
   assert(err == 0);
+}
+
+static void
+tt_js__on_teardown(js_deferred_teardown_t *handle, void *data) {
+  int err;
+
+  tt_js_pty_t *pty = (tt_js_pty_t *) data;
+
+  pty->exiting = true;
+
+  if (pty->exited) return;
+
+  // Interactive shells ignore SIGTERM, so only SIGKILL guarantees that the
+  // process exits and teardown completes.
+  err = tt_pty_kill(&pty->pty, SIGKILL);
+  assert(err == 0 || err == UV_ESRCH);
 }
 
 static js_value_t *
@@ -329,6 +368,8 @@ tt_js_pty_spawn(js_env_t *env, js_callback_info_t *info) {
   }
 
   pty->env = env;
+  pty->exited = false;
+  pty->exiting = false;
 
   err = js_create_reference(env, argv[7], 1, &pty->ctx);
   assert(err == 0);
@@ -337,6 +378,9 @@ tt_js_pty_spawn(js_env_t *env, js_callback_info_t *info) {
   assert(err == 0);
 
   err = js_create_reference(env, argv[9], 1, &pty->on_exit);
+  assert(err == 0);
+
+  err = js_add_deferred_teardown_callback(env, tt_js__on_teardown, (void *) pty, &pty->teardown);
   assert(err == 0);
 
   js_value_t *result;
@@ -415,6 +459,7 @@ tt_js_pty_write(js_env_t *env, js_callback_info_t *info) {
     return NULL;
   }
 
+  req->pty = pty;
   req->env = env;
 
   err = js_create_reference(env, argv[3], 1, &req->ctx);

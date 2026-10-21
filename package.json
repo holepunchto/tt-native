@@ -11,6 +11,10 @@
     "process": {
       "bare": "bare-process",
       "default": "process"
+    },
+    "worker_threads": {
+      "bare": "bare-worker",
+      "default": "worker_threads"
     }
   },
   "files": [
@@ -46,6 +50,7 @@
     "bare-compat-napi": "^1.4.1",
     "bare-path": "^3.0.0",
     "bare-process": "^4.5.1",
+    "bare-worker": "^4.5.3",
     "brittle": "^3.1.0",
     "cmake-bare": "^1.1.15",
     "cmake-fetch": "^1.1.0",

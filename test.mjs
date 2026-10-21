@@ -1,6 +1,7 @@
 import test from 'brittle'
 import path from 'path'
 import process from 'process'
+import { Worker } from 'worker_threads'
 
 import { spawn } from './index.js'
 
@@ -45,6 +46,22 @@ test('big write', async (t) => {
       t.pass('closed')
     })
     .resume()
+})
+
+test('teardown kills process', async (t) => {
+  t.plan(1)
+
+  const worker = new Worker(new URL('test/fixtures/teardown.mjs', import.meta.url))
+
+  let pid = null
+
+  worker.on('message', (message) => {
+    pid = message
+  })
+
+  await new Promise((resolve) => worker.on('exit', resolve))
+
+  t.exception(() => process.kill(pid, 0))
 })
 
 test('no args or opts', async (t) => {
@@ -119,7 +136,8 @@ test('kill with signal', async (t) => {
     .kill('SIGTERM')
 })
 
-test('kill twice', async (t) => {
+// Windows has no signal handling, so every signal terminates the process.
+test('kill twice', { skip: isWindows }, async (t) => {
   t.plan(5)
 
   const pty = spawn('node', ['test/fixtures/sigint.mjs'])
@@ -184,11 +202,14 @@ test('env', async (t) => {
   })
   t.ok(pty.pid)
 
+  let output = ''
+
   pty
     .on('data', (data) => {
-      t.ok(`${data}`.includes('42'))
+      output += data
     })
     .on('close', () => {
+      t.ok(output.includes('42'))
       t.pass('closed')
     })
 })
@@ -201,11 +222,14 @@ test('cwd', async (t) => {
   })
   t.ok(pty.pid)
 
+  let output = ''
+
   pty
     .on('data', (data) => {
-      t.ok(`${data}`.includes(path.resolve('test')))
+      output += data
     })
     .on('close', () => {
+      t.ok(output.includes(path.resolve('test')))
       t.pass('closed')
     })
 })
