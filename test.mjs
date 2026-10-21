@@ -45,6 +45,7 @@ test.solo('big write', async (t) => {
     .on('close', () => {
       t.pass('closed')
     })
+    .resume()
 })
 
 test('no args or opts', async (t) => {
