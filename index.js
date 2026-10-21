@@ -1,25 +1,19 @@
-const b4a = require('b4a')
 const { Duplex } = require('streamx')
 const binding = require('./binding')
 
-const constants = exports.constants = {
+const constants = (exports.constants = {
   SIGINT: binding.SIGINT,
   SIGKILL: binding.SIGKILL,
   SIGTERM: binding.SIGTERM
-}
+})
 
 class PTY extends Duplex {
-  constructor (file, args, opts) {
-    const {
-      width = 80,
-      height = 60,
-      env = null,
-      cwd = null
-    } = opts
+  constructor(file, args, opts) {
+    const { width = 80, height = 60, env = null, cwd = null } = opts
 
     super({ mapWritable: toBuffer })
 
-    this._handle = b4a.allocUnsafe(binding.sizeof_tt_napi_pty_t)
+    this._handle = Buffer.allocUnsafeSlow(binding.sizeofPTY)
     this._running = true
     this._reading = null
     this._writing = null
@@ -28,13 +22,21 @@ class PTY extends Duplex {
     this.width = width
     this.height = height
 
-    this.pid = binding.tt_napi_pty_spawn(this._handle, width, height, file, args, env, cwd, this,
+    this.pid = binding.spawn(
+      this._handle,
+      width,
+      height,
+      file,
+      args,
+      env,
+      cwd,
+      this,
       this._onread,
       this._onexit
     )
   }
 
-  _onread (err, read) {
+  _onread(err, read) {
     if (err) this.destroy(err)
     else {
       const data = this._reading.subarray(0, read)
@@ -47,7 +49,7 @@ class PTY extends Duplex {
     return this._reading
   }
 
-  _onwrite (err) {
+  _onwrite(err) {
     const { cb } = this._writing
     this._writing = null
 
@@ -55,7 +57,7 @@ class PTY extends Duplex {
     else cb(null)
   }
 
-  _onexit (status, signal) {
+  _onexit(status, signal) {
     this._running = false
 
     switch (signal) {
@@ -83,14 +85,14 @@ class PTY extends Duplex {
     else this.end()
   }
 
-  _open (cb) {
+  _open(cb) {
     this._alloc()
-    binding.tt_napi_pty_read(this._handle, this._reading)
+    binding.read(this._handle, this._reading)
     cb(null)
   }
 
-  _write (data, cb) {
-    const req = b4a.allocUnsafe(binding.sizeof_tt_napi_pty_write_t)
+  _write(data, cb) {
+    const req = Buffer.allocUnsafeSlow(binding.sizeofWrite)
 
     this._writing = {
       req,
@@ -98,34 +100,32 @@ class PTY extends Duplex {
       cb
     }
 
-    binding.tt_napi_pty_write(this._handle, this._writing.req, data, this,
-      this._onwrite
-    )
+    binding.write(this._handle, this._writing.req, data, this, this._onwrite)
   }
 
-  _predestroy () {
+  _predestroy() {
     if (this._running) this.kill()
   }
 
-  _destroy (cb) {
+  _destroy(cb) {
     if (this._running) this._destroying = cb
     else cb(null)
   }
 
-  _alloc () {
-    this._reading = b4a.allocUnsafe(65536)
+  _alloc() {
+    this._reading = Buffer.allocUnsafeSlow(65536)
   }
 
-  resize (width, height) {
+  resize(width, height) {
     if (!this._running) throw new Error('Process has exited')
 
-    binding.tt_napi_pty_resize(this._handle, width, height)
+    binding.resize(this._handle, width, height)
 
     this.width = width
     this.height = height
   }
 
-  kill (signal = constants.SIGINT) {
+  kill(signal = constants.SIGINT) {
     if (!this._running) throw new Error('Process has exited')
 
     if (typeof signal !== 'number') {
@@ -144,11 +144,11 @@ class PTY extends Duplex {
       }
     }
 
-    binding.tt_napi_pty_kill(this._handle, signal)
+    binding.kill(this._handle, signal)
   }
 }
 
-exports.spawn = function spawn (file, args, opts) {
+exports.spawn = function spawn(file, args, opts) {
   if (Array.isArray(args)) {
     //
   } else if (args === null) {
@@ -177,6 +177,6 @@ exports.spawn = function spawn (file, args, opts) {
   return new PTY(file, args, opts)
 }
 
-function toBuffer (data) {
-  return typeof data === 'string' ? b4a.from(data) : data
+function toBuffer(data) {
+  return typeof data === 'string' ? Buffer.from(data) : data
 }

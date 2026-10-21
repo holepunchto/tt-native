@@ -11,11 +11,14 @@
     "process": {
       "bare": "bare-process",
       "default": "process"
+    },
+    "worker_threads": {
+      "bare": "bare-worker",
+      "default": "worker_threads"
     }
   },
   "files": [
     "index.js",
-    "macros.h",
     "binding.c",
     "binding.js",
     "CMakeLists.txt",
@@ -23,10 +26,11 @@
   ],
   "addon": true,
   "scripts": {
-    "test": "npm run lint && npm run test:bare && npm run test:node",
-    "test:bare": "bare test.mjs",
-    "test:node": "node test.mjs",
-    "lint": "standard"
+    "format": "prettier --write . && lunte --fix",
+    "lint": "prettier --check . && lunte",
+    "test": "npm run test:bare && npm run test:node",
+    "test:bare": "brittle-bare --coverage test.mjs",
+    "test:node": "brittle-node --coverage test.mjs"
   },
   "repository": {
     "type": "git",
@@ -39,17 +43,21 @@
   },
   "homepage": "https://github.com/holepunchto/tt-native#readme",
   "dependencies": {
-    "b4a": "^1.6.0",
     "require-addon": "^1.0.2",
     "streamx": "^2.12.5"
   },
   "devDependencies": {
+    "bare-compat-napi": "^1.4.1",
     "bare-path": "^3.0.0",
-    "bare-process": "^3.0.0",
+    "bare-process": "^4.5.1",
+    "bare-worker": "^4.5.3",
     "brittle": "^3.1.0",
     "cmake-bare": "^1.1.15",
     "cmake-fetch": "^1.1.0",
     "cmake-napi": "^1.0.7",
-    "standard": "^17.0.0"
+    "cmake-npm": "^1.1.2",
+    "lunte": "^1.8.6",
+    "prettier": "^3.9.10",
+    "prettier-config-holepunch": "^2.0.0"
   }
 }
