@@ -13,7 +13,7 @@ class PTY extends Duplex {
 
     super({ mapWritable: toBuffer })
 
-    this._handle = Buffer.allocUnsafeSlow(binding.sizeof_tt_napi_pty_t)
+    this._handle = Buffer.allocUnsafeSlow(binding.sizeofPTY)
     this._running = true
     this._reading = null
     this._writing = null
@@ -22,7 +22,7 @@ class PTY extends Duplex {
     this.width = width
     this.height = height
 
-    this.pid = binding.tt_napi_pty_spawn(
+    this.pid = binding.spawn(
       this._handle,
       width,
       height,
@@ -87,12 +87,12 @@ class PTY extends Duplex {
 
   _open(cb) {
     this._alloc()
-    binding.tt_napi_pty_read(this._handle, this._reading)
+    binding.read(this._handle, this._reading)
     cb(null)
   }
 
   _write(data, cb) {
-    const req = Buffer.allocUnsafeSlow(binding.sizeof_tt_napi_pty_write_t)
+    const req = Buffer.allocUnsafeSlow(binding.sizeofWrite)
 
     this._writing = {
       req,
@@ -100,7 +100,7 @@ class PTY extends Duplex {
       cb
     }
 
-    binding.tt_napi_pty_write(this._handle, this._writing.req, data, this, this._onwrite)
+    binding.write(this._handle, this._writing.req, data, this, this._onwrite)
   }
 
   _predestroy() {
@@ -119,7 +119,7 @@ class PTY extends Duplex {
   resize(width, height) {
     if (!this._running) throw new Error('Process has exited')
 
-    binding.tt_napi_pty_resize(this._handle, width, height)
+    binding.resize(this._handle, width, height)
 
     this.width = width
     this.height = height
@@ -144,7 +144,7 @@ class PTY extends Duplex {
       }
     }
 
-    binding.tt_napi_pty_kill(this._handle, signal)
+    binding.kill(this._handle, signal)
   }
 }
 
