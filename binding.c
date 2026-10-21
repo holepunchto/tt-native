@@ -204,7 +204,7 @@ NAPI_METHOD(tt_napi_pty_spawn) {
 
 static void
 on_read (tt_pty_t *handle, ssize_t read_len, const uv_buf_t *buf) {
-  if (read_len == UV_EOF) return;
+  if (read_len == UV_EOF || read_len == 0) return;
 
   tt_napi_pty_t *pty = (tt_napi_pty_t *) handle;
 

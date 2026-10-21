@@ -6,7 +6,7 @@ find_package(cmake-napi REQUIRED PATHS node_modules/cmake-napi)
 
 project(tt_native C)
 
-fetch_package("github:holepunchto/libtt#bfcf3b3")
+fetch_package("github:holepunchto/libtt#d53a66a")
 
 add_bare_module(tt_native_bare)
 

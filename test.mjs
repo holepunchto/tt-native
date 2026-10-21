@@ -1,7 +1,6 @@
 import test from 'brittle'
 import path from 'path'
 import process from 'process'
-import b4a from 'b4a'
 
 import { spawn } from './index.js'
 
@@ -30,7 +29,7 @@ test('basic', async (t) => {
     })
 })
 
-test.solo('big write', async (t) => {
+test('big write', async (t) => {
   t.plan(3)
 
   const pty = spawn('node', ['test/fixtures/big-write.mjs'])
@@ -294,9 +293,7 @@ test.skip('trigger signal', async (t) => {
     .on('data', (data) => {
       t.comment(data)
 
-      if (b4a.includes(data, 'SIGINT')) {
-        t.pass('triggered SIGINT')
-      }
+      if (data.includes('SIGINT')) t.pass('triggered SIGINT')
     })
     .on('exit', () => {
       t.pass('exited')
