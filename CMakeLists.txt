@@ -7,7 +7,7 @@ find_package(cmake-npm REQUIRED PATHS node_modules/cmake-npm)
 
 project(tt_native C)
 
-fetch_package("github:holepunchto/libtt#d53a66a")
+fetch_package("github:holepunchto/libtt#73c9c93")
 
 add_bare_module(tt_native_bare)
 
