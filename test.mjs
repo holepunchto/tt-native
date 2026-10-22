@@ -10,10 +10,12 @@ const isWindows = process.platform === 'win32'
 const shell = isWindows ? 'powershell.exe' : 'bash'
 
 test('basic', async (t) => {
-  t.plan(4)
+  t.plan(5)
 
   const pty = spawn('node', ['test/fixtures/hello.mjs'])
+
   t.ok(pty.pid)
+  t.ok(typeof pty.name === 'string', pty.name)
 
   pty
     .on('data', (data) => {
