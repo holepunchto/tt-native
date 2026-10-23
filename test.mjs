@@ -15,7 +15,7 @@ test('basic', async (t) => {
   const pty = spawn('node', ['test/fixtures/hello.mjs'])
 
   t.ok(pty.pid)
-  t.ok(typeof pty.name === 'string', pty.name)
+  t.is(typeof pty.name, 'string', pty.name)
 
   pty
     .on('data', (data) => {
