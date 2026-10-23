@@ -536,6 +536,35 @@ tt_js_pty_kill(js_env_t *env, js_callback_info_t *info) {
 }
 
 static js_value_t *
+tt_js_pty_get_name(js_env_t *env, js_callback_info_t *info) {
+  int err;
+
+  size_t argc = 1;
+  js_value_t *argv[1];
+
+  err = js_get_callback_info(env, info, &argc, argv, NULL, NULL);
+  assert(err == 0);
+
+  assert(argc == 1);
+
+  tt_js_pty_t *pty;
+  err = js_get_typedarray_info(env, argv[0], NULL, (void **) &pty, NULL, NULL, NULL);
+  assert(err == 0);
+
+  size_t len = 4096;
+  char name[len];
+
+  err = tt_pty_get_name(&pty->pty, name, len);
+  assert(err == 0);
+
+  js_value_t *result;
+  err = js_create_string_utf8(env, (utf8_t *) name, -1, &result);
+  assert(err == 0);
+
+  return result;
+}
+
+static js_value_t *
 tt_js_exports(js_env_t *env, js_value_t *exports) {
   int err;
 
@@ -570,6 +599,7 @@ tt_js_exports(js_env_t *env, js_value_t *exports) {
   V("write", tt_js_pty_write)
   V("resize", tt_js_pty_resize)
   V("kill", tt_js_pty_kill)
+  V("getName", tt_js_pty_get_name)
 #undef V
 
   return exports;
