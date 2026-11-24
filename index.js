@@ -146,6 +146,10 @@ class PTY extends Duplex {
 
     binding.kill(this._handle, signal)
   }
+
+  get name() {
+    return binding.getName(this._handle)
+  }
 }
 
 exports.spawn = function spawn(file, args, opts) {
