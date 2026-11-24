@@ -3,6 +3,7 @@
 #include <js.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include <tt.h>
 #include <utf.h>
 #include <uv.h>
@@ -63,7 +64,7 @@ tt_js__create_error_or_null(js_env_t *env, int status) {
 }
 
 static char *
-tt_js__get_string(js_env_t *env, js_value_t *value) {
+tt_js__get_string(js_env_t *env, js_value_t *value, bool *valid) {
   int err;
 
   size_t len;
@@ -75,11 +76,13 @@ tt_js__get_string(js_env_t *env, js_value_t *value) {
   err = js_get_value_string_utf8(env, value, str, len + 1, NULL);
   assert(err == 0);
 
+  if (strlen((char *) str) != len) *valid = false;
+
   return (char *) str;
 }
 
 static char **
-tt_js__get_string_array(js_env_t *env, js_value_t *value, uint32_t *result) {
+tt_js__get_string_array(js_env_t *env, js_value_t *value, uint32_t *result, bool *valid) {
   int err;
 
   uint32_t len;
@@ -93,7 +96,7 @@ tt_js__get_string_array(js_env_t *env, js_value_t *value, uint32_t *result) {
     err = js_get_element(env, value, i, &element);
     assert(err == 0);
 
-    strs[i] = tt_js__get_string(env, element);
+    strs[i] = tt_js__get_string(env, element, valid);
   }
 
   *result = len;
@@ -318,22 +321,24 @@ tt_js_pty_spawn(js_env_t *env, js_callback_info_t *info) {
   err = js_get_value_uint32(env, argv[2], &height);
   assert(err == 0);
 
-  char *file = tt_js__get_string(env, argv[3]);
+  bool valid = true;
+
+  char *file = tt_js__get_string(env, argv[3], &valid);
 
   uint32_t args_len;
-  char **args = tt_js__get_string_array(env, argv[4], &args_len);
+  char **args = tt_js__get_string_array(env, argv[4], &args_len, &valid);
 
   uint32_t pairs_len = 0;
   char **pairs = NULL;
 
   if (!tt_js__is_null(env, argv[5])) {
-    pairs = tt_js__get_string_array(env, argv[5], &pairs_len);
+    pairs = tt_js__get_string_array(env, argv[5], &pairs_len, &valid);
   }
 
   char *cwd = NULL;
 
   if (!tt_js__is_null(env, argv[6])) {
-    cwd = tt_js__get_string(env, argv[6]);
+    cwd = tt_js__get_string(env, argv[6], &valid);
   }
 
   uv_loop_t *loop;
@@ -352,13 +357,20 @@ tt_js_pty_spawn(js_env_t *env, js_callback_info_t *info) {
     .env = pairs,
   };
 
-  int status = tt_pty_spawn(loop, &pty->pty, &term, &process, tt_js__on_exit);
+  int status = valid ? tt_pty_spawn(loop, &pty->pty, &term, &process, tt_js__on_exit) : 0;
 
   free(file);
   free(cwd);
 
   tt_js__free_string_array(args, args_len);
   tt_js__free_string_array(pairs, pairs_len);
+
+  if (!valid) {
+    err = js_throw_type_error(env, NULL, "Arguments must not contain null bytes");
+    assert(err == 0);
+
+    return NULL;
+  }
 
   if (status < 0) {
     err = js_throw_error(env, uv_err_name(status), uv_strerror(status));
