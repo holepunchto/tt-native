@@ -77,6 +77,22 @@ test('no args or opts', async (t) => {
     .kill()
 })
 
+test('arguments with a NUL', (t) => {
+  const fixture = 'test/fixtures/hello.mjs'
+
+  const cases = [
+    ['node\0x', [fixture], {}],
+    ['node', [fixture + '\0.png'], {}],
+    ['node', [fixture], { cwd: '.\0/missing' }],
+    ['node', [fixture], { env: { 'A\0B': '1' } }],
+    ['node', [fixture], { env: { A: '1\0' } }]
+  ]
+
+  for (const [file, args, opts] of cases) {
+    t.exception.all(() => spawn(file, args, opts), TypeError)
+  }
+})
+
 test('kill', async (t) => {
   t.plan(2)
 

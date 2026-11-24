@@ -3,6 +3,7 @@
 #include <js.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include <tt.h>
 #include <utf.h>
 #include <uv.h>
@@ -38,7 +39,7 @@ typedef struct {
 } tt_js_pty_write_t;
 
 static js_value_t *
-tt_js__create_error_or_null(js_env_t *env, int status) {
+tt_js__create_error_or_null (js_env_t *env, int status) {
   int err;
 
   js_value_t *result;
@@ -63,7 +64,7 @@ tt_js__create_error_or_null(js_env_t *env, int status) {
 }
 
 static char *
-tt_js__get_string(js_env_t *env, js_value_t *value) {
+tt_js__get_string (js_env_t *env, js_value_t *value, bool *valid) {
   int err;
 
   size_t len;
@@ -75,11 +76,13 @@ tt_js__get_string(js_env_t *env, js_value_t *value) {
   err = js_get_value_string_utf8(env, value, str, len + 1, NULL);
   assert(err == 0);
 
+  if (strlen((char *) str) != len) *valid = false;
+
   return (char *) str;
 }
 
 static char **
-tt_js__get_string_array(js_env_t *env, js_value_t *value, uint32_t *result) {
+tt_js__get_string_array (js_env_t *env, js_value_t *value, uint32_t *result, bool *valid) {
   int err;
 
   uint32_t len;
@@ -93,7 +96,7 @@ tt_js__get_string_array(js_env_t *env, js_value_t *value, uint32_t *result) {
     err = js_get_element(env, value, i, &element);
     assert(err == 0);
 
-    strs[i] = tt_js__get_string(env, element);
+    strs[i] = tt_js__get_string(env, element, valid);
   }
 
   *result = len;
@@ -102,7 +105,7 @@ tt_js__get_string_array(js_env_t *env, js_value_t *value, uint32_t *result) {
 }
 
 static void
-tt_js__free_string_array(char **strs, uint32_t len) {
+tt_js__free_string_array (char **strs, uint32_t len) {
   if (strs == NULL) return;
 
   for (uint32_t i = 0; i < len; i++) {
@@ -113,7 +116,7 @@ tt_js__free_string_array(char **strs, uint32_t len) {
 }
 
 static bool
-tt_js__is_null(js_env_t *env, js_value_t *value) {
+tt_js__is_null (js_env_t *env, js_value_t *value) {
   int err;
 
   bool is_null;
@@ -124,7 +127,7 @@ tt_js__is_null(js_env_t *env, js_value_t *value) {
 }
 
 static void
-tt_js__on_close(tt_pty_t *handle) {
+tt_js__on_close (tt_pty_t *handle) {
   int err;
 
   tt_js_pty_t *pty = (tt_js_pty_t *) handle;
@@ -145,7 +148,7 @@ tt_js__on_close(tt_pty_t *handle) {
 }
 
 static void
-tt_js__on_exit(tt_pty_t *handle, int64_t exit_status, int term_signal) {
+tt_js__on_exit (tt_pty_t *handle, int64_t exit_status, int term_signal) {
   int err;
 
   tt_js_pty_t *pty = (tt_js_pty_t *) handle;
@@ -189,7 +192,7 @@ tt_js__on_exit(tt_pty_t *handle, int64_t exit_status, int term_signal) {
 }
 
 static void
-tt_js__on_read(tt_pty_t *handle, ssize_t read_len, const uv_buf_t *buf) {
+tt_js__on_read (tt_pty_t *handle, ssize_t read_len, const uv_buf_t *buf) {
   int err;
 
   if (read_len == UV_EOF || read_len == 0) return;
@@ -236,14 +239,14 @@ tt_js__on_read(tt_pty_t *handle, ssize_t read_len, const uv_buf_t *buf) {
 }
 
 static void
-tt_js__on_alloc(tt_pty_t *handle, size_t suggested_size, uv_buf_t *buf) {
+tt_js__on_alloc (tt_pty_t *handle, size_t suggested_size, uv_buf_t *buf) {
   tt_js_pty_t *pty = (tt_js_pty_t *) handle;
 
   *buf = pty->reading;
 }
 
 static void
-tt_js__on_write(tt_pty_write_t *handle, int status) {
+tt_js__on_write (tt_pty_write_t *handle, int status) {
   int err;
 
   tt_js_pty_write_t *req = (tt_js_pty_write_t *) handle;
@@ -279,7 +282,7 @@ tt_js__on_write(tt_pty_write_t *handle, int status) {
 }
 
 static void
-tt_js__on_teardown(js_deferred_teardown_t *handle, void *data) {
+tt_js__on_teardown (js_deferred_teardown_t *handle, void *data) {
   int err;
 
   tt_js_pty_t *pty = (tt_js_pty_t *) data;
@@ -295,7 +298,7 @@ tt_js__on_teardown(js_deferred_teardown_t *handle, void *data) {
 }
 
 static js_value_t *
-tt_js_pty_spawn(js_env_t *env, js_callback_info_t *info) {
+tt_js_pty_spawn (js_env_t *env, js_callback_info_t *info) {
   int err;
 
   size_t argc = 10;
@@ -318,22 +321,24 @@ tt_js_pty_spawn(js_env_t *env, js_callback_info_t *info) {
   err = js_get_value_uint32(env, argv[2], &height);
   assert(err == 0);
 
-  char *file = tt_js__get_string(env, argv[3]);
+  bool valid = true;
+
+  char *file = tt_js__get_string(env, argv[3], &valid);
 
   uint32_t args_len;
-  char **args = tt_js__get_string_array(env, argv[4], &args_len);
+  char **args = tt_js__get_string_array(env, argv[4], &args_len, &valid);
 
   uint32_t pairs_len = 0;
   char **pairs = NULL;
 
   if (!tt_js__is_null(env, argv[5])) {
-    pairs = tt_js__get_string_array(env, argv[5], &pairs_len);
+    pairs = tt_js__get_string_array(env, argv[5], &pairs_len, &valid);
   }
 
   char *cwd = NULL;
 
   if (!tt_js__is_null(env, argv[6])) {
-    cwd = tt_js__get_string(env, argv[6]);
+    cwd = tt_js__get_string(env, argv[6], &valid);
   }
 
   uv_loop_t *loop;
@@ -352,13 +357,20 @@ tt_js_pty_spawn(js_env_t *env, js_callback_info_t *info) {
     .env = pairs,
   };
 
-  int status = tt_pty_spawn(loop, &pty->pty, &term, &process, tt_js__on_exit);
+  int status = valid ? tt_pty_spawn(loop, &pty->pty, &term, &process, tt_js__on_exit) : 0;
 
   free(file);
   free(cwd);
 
   tt_js__free_string_array(args, args_len);
   tt_js__free_string_array(pairs, pairs_len);
+
+  if (!valid) {
+    err = js_throw_type_error(env, NULL, "Arguments must not contain null bytes");
+    assert(err == 0);
+
+    return NULL;
+  }
 
   if (status < 0) {
     err = js_throw_error(env, uv_err_name(status), uv_strerror(status));
@@ -391,7 +403,7 @@ tt_js_pty_spawn(js_env_t *env, js_callback_info_t *info) {
 }
 
 static js_value_t *
-tt_js_pty_read(js_env_t *env, js_callback_info_t *info) {
+tt_js_pty_read (js_env_t *env, js_callback_info_t *info) {
   int err;
 
   size_t argc = 2;
@@ -424,7 +436,7 @@ tt_js_pty_read(js_env_t *env, js_callback_info_t *info) {
 }
 
 static js_value_t *
-tt_js_pty_write(js_env_t *env, js_callback_info_t *info) {
+tt_js_pty_write (js_env_t *env, js_callback_info_t *info) {
   int err;
 
   size_t argc = 5;
@@ -472,7 +484,7 @@ tt_js_pty_write(js_env_t *env, js_callback_info_t *info) {
 }
 
 static js_value_t *
-tt_js_pty_resize(js_env_t *env, js_callback_info_t *info) {
+tt_js_pty_resize (js_env_t *env, js_callback_info_t *info) {
   int err;
 
   size_t argc = 3;
@@ -506,7 +518,7 @@ tt_js_pty_resize(js_env_t *env, js_callback_info_t *info) {
 }
 
 static js_value_t *
-tt_js_pty_kill(js_env_t *env, js_callback_info_t *info) {
+tt_js_pty_kill (js_env_t *env, js_callback_info_t *info) {
   int err;
 
   size_t argc = 2;
@@ -536,7 +548,7 @@ tt_js_pty_kill(js_env_t *env, js_callback_info_t *info) {
 }
 
 static js_value_t *
-tt_js_exports(js_env_t *env, js_value_t *exports) {
+tt_js_exports (js_env_t *env, js_value_t *exports) {
   int err;
 
 #define V(name, n) \

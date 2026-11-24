@@ -164,6 +164,8 @@ exports.spawn = function spawn(file, args, opts) {
     opts = {}
   }
 
+  validateSpawnArguments(file, args, opts.cwd, opts.env)
+
   if (opts.env) {
     const env = []
 
@@ -175,6 +177,28 @@ exports.spawn = function spawn(file, args, opts) {
   args = [file, ...args]
 
   return new PTY(file, args, opts)
+}
+
+// The arguments are passed on as C strings, so a NUL would cut them short.
+function validateSpawnArguments(file, args, cwd, env) {
+  validateNoNullBytes(file, 'file')
+
+  for (let i = 0; i < args.length; i++) validateNoNullBytes(String(args[i]), `args[${i}]`)
+
+  if (cwd) validateNoNullBytes(cwd, 'options.cwd')
+
+  if (env) {
+    for (const key in env) {
+      validateNoNullBytes(key, `options.env['${key}']`)
+      validateNoNullBytes(String(env[key]), `options.env['${key}']`)
+    }
+  }
+}
+
+function validateNoNullBytes(value, name) {
+  if (value.includes('\0')) {
+    throw new TypeError(`The "${name}" argument must not contain null bytes`)
+  }
 }
 
 function toBuffer(data) {
