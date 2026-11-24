@@ -39,7 +39,7 @@ typedef struct {
 } tt_js_pty_write_t;
 
 static js_value_t *
-tt_js__create_error_or_null (js_env_t *env, int status) {
+tt_js__create_error_or_null(js_env_t *env, int status) {
   int err;
 
   js_value_t *result;
@@ -64,7 +64,7 @@ tt_js__create_error_or_null (js_env_t *env, int status) {
 }
 
 static char *
-tt_js__get_string (js_env_t *env, js_value_t *value, bool *valid) {
+tt_js__get_string(js_env_t *env, js_value_t *value, bool *valid) {
   int err;
 
   size_t len;
@@ -82,7 +82,7 @@ tt_js__get_string (js_env_t *env, js_value_t *value, bool *valid) {
 }
 
 static char **
-tt_js__get_string_array (js_env_t *env, js_value_t *value, uint32_t *result, bool *valid) {
+tt_js__get_string_array(js_env_t *env, js_value_t *value, uint32_t *result, bool *valid) {
   int err;
 
   uint32_t len;
@@ -105,7 +105,7 @@ tt_js__get_string_array (js_env_t *env, js_value_t *value, uint32_t *result, boo
 }
 
 static void
-tt_js__free_string_array (char **strs, uint32_t len) {
+tt_js__free_string_array(char **strs, uint32_t len) {
   if (strs == NULL) return;
 
   for (uint32_t i = 0; i < len; i++) {
@@ -116,7 +116,7 @@ tt_js__free_string_array (char **strs, uint32_t len) {
 }
 
 static bool
-tt_js__is_null (js_env_t *env, js_value_t *value) {
+tt_js__is_null(js_env_t *env, js_value_t *value) {
   int err;
 
   bool is_null;
@@ -127,7 +127,7 @@ tt_js__is_null (js_env_t *env, js_value_t *value) {
 }
 
 static void
-tt_js__on_close (tt_pty_t *handle) {
+tt_js__on_close(tt_pty_t *handle) {
   int err;
 
   tt_js_pty_t *pty = (tt_js_pty_t *) handle;
@@ -148,7 +148,7 @@ tt_js__on_close (tt_pty_t *handle) {
 }
 
 static void
-tt_js__on_exit (tt_pty_t *handle, int64_t exit_status, int term_signal) {
+tt_js__on_exit(tt_pty_t *handle, int64_t exit_status, int term_signal) {
   int err;
 
   tt_js_pty_t *pty = (tt_js_pty_t *) handle;
@@ -192,7 +192,7 @@ tt_js__on_exit (tt_pty_t *handle, int64_t exit_status, int term_signal) {
 }
 
 static void
-tt_js__on_read (tt_pty_t *handle, ssize_t read_len, const uv_buf_t *buf) {
+tt_js__on_read(tt_pty_t *handle, ssize_t read_len, const uv_buf_t *buf) {
   int err;
 
   if (read_len == UV_EOF || read_len == 0) return;
@@ -239,14 +239,14 @@ tt_js__on_read (tt_pty_t *handle, ssize_t read_len, const uv_buf_t *buf) {
 }
 
 static void
-tt_js__on_alloc (tt_pty_t *handle, size_t suggested_size, uv_buf_t *buf) {
+tt_js__on_alloc(tt_pty_t *handle, size_t suggested_size, uv_buf_t *buf) {
   tt_js_pty_t *pty = (tt_js_pty_t *) handle;
 
   *buf = pty->reading;
 }
 
 static void
-tt_js__on_write (tt_pty_write_t *handle, int status) {
+tt_js__on_write(tt_pty_write_t *handle, int status) {
   int err;
 
   tt_js_pty_write_t *req = (tt_js_pty_write_t *) handle;
@@ -282,7 +282,7 @@ tt_js__on_write (tt_pty_write_t *handle, int status) {
 }
 
 static void
-tt_js__on_teardown (js_deferred_teardown_t *handle, void *data) {
+tt_js__on_teardown(js_deferred_teardown_t *handle, void *data) {
   int err;
 
   tt_js_pty_t *pty = (tt_js_pty_t *) data;
@@ -298,7 +298,7 @@ tt_js__on_teardown (js_deferred_teardown_t *handle, void *data) {
 }
 
 static js_value_t *
-tt_js_pty_spawn (js_env_t *env, js_callback_info_t *info) {
+tt_js_pty_spawn(js_env_t *env, js_callback_info_t *info) {
   int err;
 
   size_t argc = 10;
@@ -403,7 +403,7 @@ tt_js_pty_spawn (js_env_t *env, js_callback_info_t *info) {
 }
 
 static js_value_t *
-tt_js_pty_read (js_env_t *env, js_callback_info_t *info) {
+tt_js_pty_read(js_env_t *env, js_callback_info_t *info) {
   int err;
 
   size_t argc = 2;
@@ -436,7 +436,7 @@ tt_js_pty_read (js_env_t *env, js_callback_info_t *info) {
 }
 
 static js_value_t *
-tt_js_pty_write (js_env_t *env, js_callback_info_t *info) {
+tt_js_pty_write(js_env_t *env, js_callback_info_t *info) {
   int err;
 
   size_t argc = 5;
@@ -484,7 +484,7 @@ tt_js_pty_write (js_env_t *env, js_callback_info_t *info) {
 }
 
 static js_value_t *
-tt_js_pty_resize (js_env_t *env, js_callback_info_t *info) {
+tt_js_pty_resize(js_env_t *env, js_callback_info_t *info) {
   int err;
 
   size_t argc = 3;
@@ -518,7 +518,7 @@ tt_js_pty_resize (js_env_t *env, js_callback_info_t *info) {
 }
 
 static js_value_t *
-tt_js_pty_kill (js_env_t *env, js_callback_info_t *info) {
+tt_js_pty_kill(js_env_t *env, js_callback_info_t *info) {
   int err;
 
   size_t argc = 2;
@@ -548,7 +548,7 @@ tt_js_pty_kill (js_env_t *env, js_callback_info_t *info) {
 }
 
 static js_value_t *
-tt_js_pty_get_name (js_env_t *env, js_callback_info_t *info) {
+tt_js_pty_get_name(js_env_t *env, js_callback_info_t *info) {
   int err;
 
   size_t argc = 1;
@@ -577,7 +577,7 @@ tt_js_pty_get_name (js_env_t *env, js_callback_info_t *info) {
 }
 
 static js_value_t *
-tt_js_exports (js_env_t *env, js_value_t *exports) {
+tt_js_exports(js_env_t *env, js_value_t *exports) {
   int err;
 
 #define V(name, n) \
